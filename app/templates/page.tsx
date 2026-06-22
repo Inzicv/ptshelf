@@ -523,14 +523,12 @@ function TemplatesContent() {
   const {
     templates,
     presets,
-    projects,
     folders,
     addTemplate,
     updateTemplate,
     deleteTemplate,
     addPreset,
     deletePreset,
-    updateProject,
     autocompleteSuggestions,
     addAutocompleteSuggestion,
     toggleAutocompleteSuggestion,
@@ -541,36 +539,32 @@ function TemplatesContent() {
   const router = useRouter();
 
   const [search, setSearch] = useState("");
-  const [selectedProjectId, setSelectedProjectId] = useState<string>("");
+  const [selectedFolderId, setSelectedFolderId] = useState<string>("");
 
   // Create Modal State
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newTemplateName, setNewTemplateName] = useState("");
   const [newTemplateDesc, setNewTemplateDesc] = useState("");
-  const [newTemplateProjId, setNewTemplateProjId] = useState("");
   const [newTemplateFoldId, setNewTemplateFoldId] = useState("");
   const [newTemplateContent, setNewTemplateContent] = useState("");
 
   const templateIdParam = searchParams.get("id");
   const selectedTemplate = templates.find((t) => t.id === templateIdParam);
 
-  const activeProject = projects.find((p) => p.id === selectedProjectId);
-
   // Auto select template on mount or list update
   useEffect(() => {
-    const list = activeProject
-      ? templates.filter((t) => activeProject.templateIds.includes(t.id))
+    const list = selectedFolderId
+      ? templates.filter((t) => t.folderId === selectedFolderId)
       : templates;
     if (list.length > 0 && !templateIdParam) {
       router.replace(`/templates?id=${list[list.length - 1].id}`);
     }
-  }, [templates, templateIdParam, router, activeProject]);
+  }, [templates, templateIdParam, router, selectedFolderId]);
 
   const openCreateModal = () => {
     setNewTemplateName(`Nouveau Template ${templates.length + 1}`);
     setNewTemplateDesc("");
-    setNewTemplateProjId(selectedProjectId || "");
-    setNewTemplateFoldId("");
+    setNewTemplateFoldId(selectedFolderId || "");
     setNewTemplateContent("Bonjour [nom], bienvenue dans {{projet}} !");
     setIsCreateModalOpen(true);
   };
@@ -587,15 +581,9 @@ function TemplatesContent() {
       newTemplateFoldId || undefined
     );
 
-    // 2. Associate with project if project selected
-    if (newTemplateProjId) {
-      const proj = projects.find((p) => p.id === newTemplateProjId);
-      if (proj) {
-        updateProject(newTemplateProjId, {
-          templateIds: [...(proj.templateIds || []), templateId],
-        });
-      }
-      setSelectedProjectId(newTemplateProjId);
+    // 2. Select folder if selected in modal
+    if (newTemplateFoldId) {
+      setSelectedFolderId(newTemplateFoldId);
     }
 
     // 3. Clear/close
@@ -611,8 +599,8 @@ function TemplatesContent() {
       t.content.toLowerCase().includes(search.toLowerCase());
 
     if (!matchesSearch) return false;
-    if (activeProject) {
-      return activeProject.templateIds.includes(t.id);
+    if (selectedFolderId) {
+      return t.folderId === selectedFolderId;
     }
     return true;
   });
@@ -625,14 +613,14 @@ function TemplatesContent() {
         <div className="p-4 border-b border-border/40 flex flex-col gap-3">
           <div className="flex items-center gap-2">
             <select
-              value={selectedProjectId}
-              onChange={(e) => setSelectedProjectId(e.target.value)}
+              value={selectedFolderId}
+              onChange={(e) => setSelectedFolderId(e.target.value)}
               className="flex-1 rounded-md border border-border/50 bg-background/50 px-2 py-1.5 text-xs text-foreground focus:border-violet-500 focus:outline-none cursor-pointer"
             >
-              <option value="">-- Tous les projets --</option>
-              {projects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
+              <option value="">-- Tous les dossiers --</option>
+              {folders.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.name}
                 </option>
               ))}
             </select>
@@ -697,7 +685,6 @@ function TemplatesContent() {
             key={selectedTemplate.id}
             template={selectedTemplate}
             presets={presets}
-            activeProjectId={selectedProjectId || null}
             updateTemplate={updateTemplate}
             deleteTemplate={deleteTemplate}
             addPreset={addPreset}
@@ -769,44 +756,23 @@ function TemplatesContent() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-muted-foreground" htmlFor="temp-project">
-                    Associer à un projet
-                  </label>
-                  <select
-                    id="temp-project"
-                    value={newTemplateProjId}
-                    onChange={(e) => setNewTemplateProjId(e.target.value)}
-                    className="w-full rounded-lg border border-border/50 bg-background px-3 py-2 text-sm text-foreground focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500/50 cursor-pointer"
-                  >
-                    <option value="">-- Aucun projet --</option>
-                    {projects.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-muted-foreground" htmlFor="temp-folder">
-                    Associer à un dossier
-                  </label>
-                  <select
-                    id="temp-folder"
-                    value={newTemplateFoldId}
-                    onChange={(e) => setNewTemplateFoldId(e.target.value)}
-                    className="w-full rounded-lg border border-border/50 bg-background px-3 py-2 text-sm text-foreground focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500/50 cursor-pointer"
-                  >
-                    <option value="">-- Aucun dossier --</option>
-                    {folders.map((f) => (
-                      <option key={f.id} value={f.id}>
-                        {f.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-muted-foreground" htmlFor="temp-folder">
+                  Associer à un dossier
+                </label>
+                <select
+                  id="temp-folder"
+                  value={newTemplateFoldId}
+                  onChange={(e) => setNewTemplateFoldId(e.target.value)}
+                  className="w-full rounded-lg border border-border/50 bg-background px-3 py-2 text-sm text-foreground focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500/50 cursor-pointer"
+                >
+                  <option value="">-- Aucun dossier --</option>
+                  {folders.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="space-y-1">
@@ -849,7 +815,6 @@ function TemplatesContent() {
     </div>
   );
 }
-
 
 export default function TemplatesPage() {
   return (
