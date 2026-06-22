@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     const contentType = res.headers.get("content-type") || "";
     if (contentType.includes("text/html")) {
       return NextResponse.json(
-        { error: "Session Google expirée ou non autorisée. Veuillez vous reconnecter." },
+        { error: "Configuration Apps Script requise : L'API a renvoyé une page de connexion Google. Veuillez configurer le déploiement de votre script avec l'option 'Qui a accès : Tout le monde' (Anyone) dans l'éditeur Google Apps Script et recréer la version." },
         { status: 401 }
       );
     }
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
     const contentType = res.headers.get("content-type") || "";
     if (contentType.includes("text/html")) {
       return NextResponse.json(
-        { error: "Session Google expirée ou non autorisée. Veuillez vous reconnecter." },
+        { error: "Configuration Apps Script requise : L'API a renvoyé une page de connexion Google. Veuillez configurer le déploiement de votre script avec l'option 'Qui a accès : Tout le monde' (Anyone) dans l'éditeur Google Apps Script et recréer la version." },
         { status: 401 }
       );
     }

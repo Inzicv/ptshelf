@@ -256,8 +256,7 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
         }
 
         if (response.status === 401) {
-          handleTokenExpiration();
-          throw new Error(serverError || "Votre session Google a expiré. Veuillez vous reconnecter.");
+          throw new Error(serverError || "Votre session Google a expiré ou l'accès est refusé. Veuillez vous reconnecter.");
         }
 
         throw new Error(serverError || `Erreur lors du chargement (HTTP ${response.status})`);
@@ -287,7 +286,7 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
       setSyncError(e instanceof Error ? e.message : "Erreur de téléchargement");
       return false;
     }
-  }, [googleUser, googleAccessToken, handleTokenExpiration]);
+  }, [googleUser, googleAccessToken]);
 
   const triggerSyncPush = useCallback(async (overrideState?: {
     folders?: Folder[];
@@ -338,8 +337,7 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
         }
 
         if (response.status === 401) {
-          handleTokenExpiration();
-          throw new Error(serverError || "Votre session Google a expiré. Veuillez vous reconnecter.");
+          throw new Error(serverError || "Votre session Google a expiré ou l'accès est refusé. Veuillez vous reconnecter.");
         }
 
         throw new Error(serverError || `Erreur lors de la sauvegarde (HTTP ${response.status})`);
@@ -363,7 +361,7 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
       setSyncError(e instanceof Error ? e.message : "Erreur de sauvegarde");
       return false;
     }
-  }, [googleUser, googleAccessToken, handleTokenExpiration, folders, templates, presets, autocompleteSuggestions]);
+  }, [googleUser, googleAccessToken, folders, templates, presets, autocompleteSuggestions]);
 
   // Save to localStorage when state changes
   useEffect(() => {
