@@ -4,14 +4,16 @@ Ce guide vous explique comment lier votre application PTShelf locale à votre pr
 
 ## Le Script Google Apps Script
 
-Ce script va agir comme une base de données sans serveur. Il crée et gère un fichier nommé `ptshelf_data.json` à la racine de votre Google Drive.
+Ce script va agir comme une base de données sans serveur. Il crée et gère des fichiers nommés `ptshelf_<email_clean>_data.json` à la racine de votre Google Drive pour isoler les données de chaque utilisateur.
 
 ```javascript
-const FILE_NAME = "ptshelf_data.json";
-
 function doGet(e) {
   try {
-    const file = getOrCreateFile();
+    const email = e.parameter.email;
+    if (!email) {
+      throw new Error("Missing email parameter");
+    }
+    const file = getOrCreateFile(email);
     const content = file.getBlob().getDataAsString();
     return ContentService.createTextOutput(content)
       .setMimeType(ContentService.MimeType.JSON);
@@ -24,8 +26,16 @@ function doGet(e) {
 function doPost(e) {
   try {
     const postData = JSON.parse(e.postData.contents);
-    const file = getOrCreateFile();
-    file.setContent(JSON.stringify(postData, null, 2));
+    const email = postData.email;
+    const data = postData.data;
+    if (!email) {
+      throw new Error("Missing email in payload");
+    }
+    if (!data) {
+      throw new Error("Missing data in payload");
+    }
+    const file = getOrCreateFile(email);
+    file.setContent(JSON.stringify(data, null, 2));
     return ContentService.createTextOutput(JSON.stringify({ success: true }))
       .setMimeType(ContentService.MimeType.JSON);
   } catch (err) {
@@ -34,8 +44,12 @@ function doPost(e) {
   }
 }
 
-function getOrCreateFile() {
-  const files = DriveApp.getFilesByName(FILE_NAME);
+function getOrCreateFile(email) {
+  // Nettoyage de l'email pour créer un nom de fichier valide
+  const cleanEmail = email.replace(/[^a-zA-Z0-9@._-]/g, "_");
+  const fileName = "ptshelf_" + cleanEmail + "_data.json";
+  
+  const files = DriveApp.getFilesByName(fileName);
   if (files.hasNext()) {
     return files.next();
   } else {
@@ -45,7 +59,7 @@ function getOrCreateFile() {
       presets: [],
       autocompleteSuggestions: {}
     };
-    return DriveApp.createFile(FILE_NAME, JSON.stringify(initialData, null, 2));
+    return DriveApp.createFile(fileName, JSON.stringify(initialData, null, 2));
   }
 }
 ```
