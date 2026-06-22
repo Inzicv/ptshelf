@@ -251,7 +251,9 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
         try {
           const errBody = await response.json();
           serverError = errBody.error || "";
-        } catch (_) {}
+        } catch {
+          // Ignore parsing error
+        }
 
         if (response.status === 401) {
           handleTokenExpiration();
@@ -331,7 +333,9 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
         try {
           const errBody = await response.json();
           serverError = errBody.error || "";
-        } catch (_) {}
+        } catch {
+          // Ignore parsing error
+        }
 
         if (response.status === 401) {
           handleTokenExpiration();
