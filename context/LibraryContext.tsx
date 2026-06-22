@@ -20,7 +20,6 @@ interface LibraryState {
 }
 
 interface LibraryContextType extends LibraryState {
-  setGoogleClientId: (id: string) => void;
   setAutoSync: (val: boolean) => void;
   loginGoogle: () => void;
   logoutGoogle: () => void;
@@ -85,11 +84,8 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
   
   const DEFAULT_CLIENT_ID = "1040854497672-46v4f7d4g7e1b5b.apps.googleusercontent.com"; // Placeholder client ID default for localhost:3000
 
-  const [googleClientId, setGoogleClientIdState] = useState<string>(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("ptshelf_google_client_id") || DEFAULT_CLIENT_ID;
-    }
-    return DEFAULT_CLIENT_ID;
+  const [googleClientId] = useState<string>(() => {
+    return process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || DEFAULT_CLIENT_ID;
   });
 
   const [googleAccessToken, setGoogleAccessTokenState] = useState<string | null>(() => {
@@ -230,7 +226,7 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
   };
 
   const triggerSyncPull = useCallback(async (): Promise<boolean> => {
-    if (!googleAccessToken) {
+    if (!googleUser || !googleUser.email) {
       setSyncStatus("error");
       setSyncError("Connectez-vous d'abord à votre compte Google.");
       return false;
@@ -239,47 +235,16 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
     setSyncError(null);
 
     try {
-      const searchRes = await fetch(
-        `https://www.googleapis.com/drive/v3/files?q=name='ptshelf_data.json' and trashed=false&fields=files(id,name)`,
-        {
-          headers: {
-            Authorization: `Bearer ${googleAccessToken}`,
-          },
-        }
-      );
+      const response = await fetch(`/api/sync?email=${encodeURIComponent(googleUser.email)}`);
 
-      if (searchRes.status === 401) {
-        handleTokenExpiration();
-        throw new Error("Token Google expiré. Veuillez vous reconnecter.");
+      if (!response.ok) {
+        throw new Error(`Erreur lors du chargement : ${response.statusText}`);
       }
 
-      if (!searchRes.ok) {
-        throw new Error(`Recherche Drive échouée: ${searchRes.statusText}`);
+      const data = await response.json();
+      if (data.error) {
+        throw new Error(data.error);
       }
-
-      const searchData = await searchRes.json();
-      const files = searchData.files || [];
-
-      if (files.length === 0) {
-        setSyncStatus("success");
-        return true;
-      }
-
-      const fileId = files[0].id;
-      const contentRes = await fetch(
-        `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
-        {
-          headers: {
-            Authorization: `Bearer ${googleAccessToken}`,
-          },
-        }
-      );
-
-      if (!contentRes.ok) {
-        throw new Error(`Téléchargement échoué: ${contentRes.statusText}`);
-      }
-
-      const data = await contentRes.json();
 
       skipNextSync.current = true;
       if (Array.isArray(data.folders)) setFolders(data.folders);
@@ -295,12 +260,12 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
       }
       return true;
     } catch (e: unknown) {
-      console.error("Failed to pull data from Google Drive", e);
+      console.error("Failed to pull data from central Drive", e);
       setSyncStatus("error");
       setSyncError(e instanceof Error ? e.message : "Erreur de téléchargement");
       return false;
     }
-  }, [googleAccessToken, handleTokenExpiration]);
+  }, [googleUser]);
 
   const triggerSyncPush = useCallback(async (overrideState?: {
     folders?: Folder[];
@@ -308,7 +273,7 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
     presets?: Preset[];
     autocompleteSuggestions?: Record<string, AutocompleteSuggestion[]>;
   }): Promise<boolean> => {
-    if (!googleAccessToken) {
+    if (!googleUser || !googleUser.email) {
       setSyncStatus("error");
       setSyncError("Connectez-vous d'abord à votre compte Google.");
       return false;
@@ -324,69 +289,24 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
     };
 
     try {
-      const searchRes = await fetch(
-        `https://www.googleapis.com/drive/v3/files?q=name='ptshelf_data.json' and trashed=false&fields=files(id,name)`,
-        {
-          headers: {
-            Authorization: `Bearer ${googleAccessToken}`,
-          },
-        }
-      );
+      const response = await fetch("/api/sync", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: googleUser.email,
+          data: payload,
+        }),
+      });
 
-      if (searchRes.status === 401) {
-        handleTokenExpiration();
-        throw new Error("Token Google expiré. Veuillez vous reconnecter.");
+      if (!response.ok) {
+        throw new Error(`Erreur lors de la sauvegarde : ${response.statusText}`);
       }
 
-      if (!searchRes.ok) {
-        throw new Error(`Recherche Drive échouée: ${searchRes.statusText}`);
-      }
-
-      const searchData = await searchRes.json();
-      const files = searchData.files || [];
-
-      let fileId = "";
-
-      if (files.length === 0) {
-        const createMetadataRes = await fetch(
-          `https://www.googleapis.com/drive/v3/files`,
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${googleAccessToken}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              name: "ptshelf_data.json",
-              mimeType: "application/json",
-            }),
-          }
-        );
-
-        if (!createMetadataRes.ok) {
-          throw new Error(`Création de fichier échouée: ${createMetadataRes.statusText}`);
-        }
-
-        const createdFile = await createMetadataRes.json();
-        fileId = createdFile.id;
-      } else {
-        fileId = files[0].id;
-      }
-
-      const uploadRes = await fetch(
-        `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`,
-        {
-          method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${googleAccessToken}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload, null, 2),
-        }
-      );
-
-      if (!uploadRes.ok) {
-        throw new Error(`Sauvegarde échouée: ${uploadRes.statusText}`);
+      const resData = await response.json();
+      if (resData.error) {
+        throw new Error(resData.error);
       }
 
       const now = new Date().toISOString();
@@ -397,12 +317,12 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
       }
       return true;
     } catch (e: unknown) {
-      console.error("Failed to push data to Google Drive", e);
+      console.error("Failed to push data to central Drive", e);
       setSyncStatus("error");
       setSyncError(e instanceof Error ? e.message : "Erreur de sauvegarde");
       return false;
     }
-  }, [googleAccessToken, folders, templates, presets, autocompleteSuggestions, handleTokenExpiration]);
+  }, [googleUser, folders, templates, presets, autocompleteSuggestions]);
 
   // Save to localStorage when state changes
   useEffect(() => {
@@ -446,17 +366,7 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
     }
   }, [googleAccessToken, autoSync, triggerSyncPull]);
 
-  const setGoogleClientId = (id: string) => {
-    const cleanId = id.trim();
-    setGoogleClientIdState(cleanId || DEFAULT_CLIENT_ID);
-    if (typeof window !== "undefined") {
-      if (cleanId) {
-        localStorage.setItem("ptshelf_google_client_id", cleanId);
-      } else {
-        localStorage.removeItem("ptshelf_google_client_id");
-      }
-    }
-  };
+
 
   const setAutoSync = (val: boolean) => {
     setAutoSyncState(val);
@@ -645,7 +555,6 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
         syncStatus,
         lastSyncedAt,
         syncError,
-        setGoogleClientId,
         setAutoSync,
         loginGoogle,
         logoutGoogle,

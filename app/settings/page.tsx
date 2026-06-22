@@ -1,34 +1,22 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { useLibrary } from "@/context/LibraryContext";
-import { Cloud, CloudOff, RefreshCw, CheckCircle2, AlertCircle, LogOut, ChevronDown } from "lucide-react";
+import { Cloud, CloudOff, RefreshCw, CheckCircle2, AlertCircle, LogOut } from "lucide-react";
 
 export default function SettingsPage() {
   const {
-    googleClientId,
     googleAccessToken,
     googleUser,
     autoSync,
     syncStatus,
     lastSyncedAt,
     syncError,
-    setGoogleClientId,
     setAutoSync,
     logoutGoogle,
     syncPull,
     syncPush,
   } = useLibrary();
-
-  const [inputClientId, setInputClientId] = useState(googleClientId);
-  const [saveSuccess, setSaveSuccess] = useState(false);
-  const [showAdvanced, setShowAdvanced] = useState(false);
-
-  const handleSaveClientId = () => {
-    setGoogleClientId(inputClientId.trim());
-    setSaveSuccess(true);
-    setTimeout(() => setSaveSuccess(false), 2000);
-  };
 
   return (
     <div className="flex min-h-full flex-col">
@@ -122,60 +110,6 @@ export default function SettingsPage() {
                     Sauvegarde automatique (Auto-sync)
                   </label>
                 </div>
-              </div>
-
-              {/* Collapsible Advanced Settings */}
-              <div className="pt-4 border-t border-border/30">
-                <button
-                  onClick={() => setShowAdvanced(!showAdvanced)}
-                  className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                >
-                  <ChevronDown className={`size-3.5 transition-transform duration-200 ${showAdvanced ? "rotate-180" : ""}`} />
-                  Paramètres avancés
-                </button>
-
-                {showAdvanced && (
-                  <div className="mt-4 space-y-4 pt-4 border-t border-border/20 animate-in fade-in duration-200">
-                    <div className="space-y-2">
-                      <label className="text-xs font-semibold text-muted-foreground" htmlFor="clientId">
-                        {"Identifiant client OAuth (Client ID) Google personnalisé"}
-                      </label>
-                      <div className="flex gap-2">
-                        <input
-                          id="clientId"
-                          type="text"
-                          value={inputClientId}
-                          onChange={(e) => setInputClientId(e.target.value)}
-                          placeholder="ex: 123456-abcde.apps.googleusercontent.com"
-                          className="flex-1 rounded-lg border border-border/50 bg-background/50 px-3 py-2 text-xs font-mono text-foreground placeholder:text-muted-foreground/60 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500/50"
-                        />
-                        <button
-                          onClick={handleSaveClientId}
-                          className="rounded-lg bg-violet-600 px-3 py-2 text-xs font-medium text-white hover:bg-violet-500 transition-colors cursor-pointer shrink-0"
-                        >
-                          Enregistrer
-                        </button>
-                      </div>
-                      <p className="text-[10px] text-muted-foreground/60 leading-normal">
-                        Laissez vide pour utiliser le Client ID par défaut configuré pour <code>http://localhost:3000</code>.
-                      </p>
-                      {saveSuccess && (
-                        <p className="text-[10px] text-emerald-400 font-medium">Client ID enregistré avec succès !</p>
-                      )}
-                    </div>
-
-                    {/* Step-by-Step Instructions */}
-                    <div className="rounded-lg border border-border/30 bg-background/30 p-4 space-y-3 text-xs leading-relaxed text-muted-foreground">
-                      <p className="font-bold text-foreground">Comment créer votre propre Client ID ?</p>
-                      <ol className="list-decimal pl-4 space-y-1.5 text-[11px]">
-                        <li>Allez sur la <a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer" className="text-violet-400 hover:underline font-medium">Google Cloud Console</a>.</li>
-                        <li>{"Créez un projet et configurez l'écran de consentement OAuth en ajoutant le scope "}<code>https://www.googleapis.com/auth/drive.file</code>.</li>
-                        <li>Dans <strong>Identifiants</strong>, créez un <strong>Identifiant client OAuth</strong> (Application Web).</li>
-                        <li>{"Ajoutez votre domaine ou "}<code>http://localhost:3000</code>{" dans les \"Origines JavaScript autorisées\"."}</li>
-                      </ol>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           </div>
