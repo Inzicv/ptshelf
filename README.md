@@ -1,3 +1,117 @@
+# README.md
+
+# PTShelf
+
+PTShelf est une bibliothèque personnelle de templates IA.
+
+L'objectif n'est pas de créer un simple gestionnaire de prompts mais un espace de travail permettant de stocker, organiser, modifier et réutiliser facilement des modèles de prompts.
+
+Le produit est inspiré de :
+
+* Promptmetheus
+* Canva
+* Notion
+* Bitwarden
+
+## Le problème
+
+Les prompts sont souvent dispersés :
+
+* ChatGPT
+* Notion
+* Obsidian
+* Discord
+* Fichiers texte
+* Notes
+
+Ils sont difficiles à retrouver et nécessitent souvent de modifier manuellement les mêmes éléments.
+
+## Principe
+
+Au lieu de stocker :
+
+```text
+Photorealistic portrait of Rhysand wearing black armor in a snowy forest.
+```
+
+on stocke :
+
+```text
+Photorealistic portrait of [character] wearing [armor] in a [environment].
+```
+
+Les variables entre crochets sont détectées automatiquement.
+
+Lorsque l'utilisateur ouvre le template, un formulaire dynamique est généré :
+
+```text
+character = Rhysand
+
+armor = black armor
+
+environment = snowy forest
+```
+
+Le prompt final est ensuite généré.
+
+## Organisation
+
+Projects
+
+↓
+
+Folders
+
+↓
+
+Templates
+
+## Fonctionnalités principales
+
+* bibliothèque de templates
+* variables automatiques
+* génération de formulaires
+* recherche
+* favoris
+* presets
+* duplication
+* évolution des templates
+
+## Inspirations
+
+### Promptmetheus
+
+Variables et génération.
+
+### Canva
+
+Dashboard et duplication.
+
+### Notion
+
+Organisation.
+
+### Bitwarden
+
+Bibliothèque personnelle.
+
+## Stack
+
+* Next.js
+* TypeScript
+* Tailwind
+* shadcn/ui
+* GitHub
+* Vercel
+
+## Philosophie
+
+Construire une base solide avant les fonctionnalités avancées.
+
+Privilégier l'expérience utilisateur et la cohérence du produit.
+
+
+
 # PTShelf
 
 PTShelf est une base de travail minimaliste pour organiser à terme des projets, dossiers, templates, variables et presets.
