@@ -82,7 +82,7 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
     return {};
   });
   
-  const DEFAULT_CLIENT_ID = "1040854497672-46v4f7d4g7e1b5b.apps.googleusercontent.com"; // Placeholder client ID default for localhost:3000
+  const DEFAULT_CLIENT_ID = "319680135736-oajt7pt4bp4cjrsimje33qtia2hf510e.apps.googleusercontent.com";
 
   const [googleClientId] = useState<string>(() => {
     return process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || DEFAULT_CLIENT_ID;
