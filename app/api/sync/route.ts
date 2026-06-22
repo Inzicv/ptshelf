@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const DEFAULT_SYNC_URL = "https://script.google.com/macros/s/AKfycbw7899PiN_DRzu5Bl5pLSFY8ZR2loIl0NnewFn-gIYygBF1DyFvlj4vcEVmQSH2zYI3";
+const DEFAULT_SYNC_URL = "https://script.google.com/macros/s/AKfycbzimdCwisik5SDMFHN82I_r4B1XJ-PMpOpsZ8vhLxOwxBwq1MBtPwSZvCDP9J5Svwoh/exec";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
