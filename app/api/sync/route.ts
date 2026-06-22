@@ -11,16 +11,31 @@ export async function GET(request: NextRequest) {
   }
 
   const scriptUrl = process.env.SYNC_URL || DEFAULT_SYNC_URL;
+  const authHeader = request.headers.get("Authorization");
+
+  const headers: HeadersInit = {};
+  if (authHeader) {
+    headers["Authorization"] = authHeader;
+  }
 
   try {
     const res = await fetch(`${scriptUrl}?email=${encodeURIComponent(email)}`, {
       method: "GET",
+      headers,
       cache: "no-store",
     });
 
+    const contentType = res.headers.get("content-type") || "";
+    if (contentType.includes("text/html")) {
+      return NextResponse.json(
+        { error: "Session Google expirée ou non autorisée. Veuillez vous reconnecter." },
+        { status: 401 }
+      );
+    }
+
     if (!res.ok) {
       return NextResponse.json(
-        { error: `Apps Script error: ${res.statusText}` },
+        { error: `Apps Script error: ${res.statusText || res.status}` },
         { status: res.status }
       );
     }
@@ -43,19 +58,33 @@ export async function POST(request: NextRequest) {
     }
 
     const scriptUrl = process.env.SYNC_URL || DEFAULT_SYNC_URL;
+    const authHeader = request.headers.get("Authorization");
+
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (authHeader) {
+      headers["Authorization"] = authHeader;
+    }
 
     const res = await fetch(scriptUrl, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers,
       body: JSON.stringify({ email, data }),
       cache: "no-store",
     });
 
+    const contentType = res.headers.get("content-type") || "";
+    if (contentType.includes("text/html")) {
+      return NextResponse.json(
+        { error: "Session Google expirée ou non autorisée. Veuillez vous reconnecter." },
+        { status: 401 }
+      );
+    }
+
     if (!res.ok) {
       return NextResponse.json(
-        { error: `Apps Script error: ${res.statusText}` },
+        { error: `Apps Script error: ${res.statusText || res.status}` },
         { status: res.status }
       );
     }
