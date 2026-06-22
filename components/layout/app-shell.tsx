@@ -1,16 +1,27 @@
 "use client";
 
+import React, { useState } from "react";
 import { Header } from "@/components/layout/header";
 import { Sidebar } from "@/components/layout/sidebar";
 import { useLibrary } from "@/context/LibraryContext";
-import { Layers3, Cloud, AlertCircle, Loader2 } from "lucide-react";
+import { Layers3, Cloud, AlertCircle, Loader2, Settings } from "lucide-react";
 
 interface AppShellProps {
   children: React.ReactNode;
 }
 
 export function AppShell({ children }: AppShellProps) {
-  const { googleAccessToken, loginGoogle, syncStatus, syncError } = useLibrary();
+  const { googleAccessToken, googleClientId, setGoogleClientId, loginGoogle, syncStatus, syncError } = useLibrary();
+
+  const [showSettings, setShowSettings] = useState(false);
+  const [inputClientId, setInputClientId] = useState(googleClientId);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  const handleSaveClientId = () => {
+    setGoogleClientId(inputClientId.trim());
+    setSaveSuccess(true);
+    setTimeout(() => setSaveSuccess(false), 2000);
+  };
 
   if (!googleAccessToken) {
     return (
@@ -57,6 +68,53 @@ export function AppShell({ children }: AppShellProps) {
               <div className="flex items-start gap-2 rounded-lg bg-rose-500/10 border border-rose-500/20 p-3 text-left text-[11px] text-rose-400 font-mono">
                 <AlertCircle className="size-3.5 shrink-0 mt-0.5" />
                 <span>{syncError}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Collapsible Client ID settings */}
+          <div className="w-full pt-4 border-t border-border/25">
+            <button
+              onClick={() => setShowSettings(!showSettings)}
+              className="flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground hover:text-foreground transition-colors cursor-pointer mx-auto"
+            >
+              <Settings className="size-3" />
+              {showSettings ? "Masquer la configuration" : "Configurer le Client ID Google"}
+            </button>
+
+            {showSettings && (
+              <div className="mt-4 space-y-3 text-left animate-in fade-in duration-200">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-semibold text-muted-foreground" htmlFor="loginClientId">
+                    Google Client ID
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      id="loginClientId"
+                      type="text"
+                      value={inputClientId}
+                      onChange={(e) => setInputClientId(e.target.value)}
+                      placeholder="ex: 123456-abc.apps.googleusercontent.com"
+                      className="flex-1 rounded-lg border border-border/50 bg-background/50 px-3 py-1.5 text-[10px] font-mono text-foreground placeholder:text-muted-foreground/60 focus:border-violet-500 focus:outline-none"
+                    />
+                    <button
+                      onClick={handleSaveClientId}
+                      className="rounded-lg bg-violet-600 px-3 py-1.5 text-[10px] font-medium text-white hover:bg-violet-500 transition-colors cursor-pointer shrink-0"
+                    >
+                      Sauver
+                    </button>
+                  </div>
+                  {saveSuccess && (
+                    <p className="text-[9px] text-emerald-400 font-medium">Enregistré ! Veuillez vous reconnecter.</p>
+                  )}
+                </div>
+
+                <div className="rounded-lg bg-background/30 border border-border/30 p-3 text-[10px] text-muted-foreground leading-normal space-y-1.5">
+                  <p className="font-bold text-foreground">Pourquoi configurer votre Client ID ?</p>
+                  <p>
+                    Le Client ID par défaut fonctionne uniquement sur <code>http://localhost:3000</code>. Si vous déterminez une autre URL locale (ou en ligne) pour vos tests, vous devez créer votre propre identifiant sur la <a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer" className="text-violet-400 hover:underline">Google Cloud Console</a>.
+                  </p>
+                </div>
               </div>
             )}
           </div>
