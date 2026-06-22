@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 
 export default function DashboardPage() {
-  const { folders, templates, presets, syncUrl, syncStatus, lastSyncedAt } = useLibrary();
+  const { folders, templates, presets, googleAccessToken, syncStatus, lastSyncedAt } = useLibrary();
 
   const stats = [
     {
@@ -52,7 +52,7 @@ export default function DashboardPage() {
 
       <div className="flex-1 space-y-8 p-6 sm:p-8 max-w-6xl">
         {/* Sync Banner */}
-        {!syncUrl && (
+        {!googleAccessToken && (
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 sm:p-6 shadow-sm">
             <div>
               <h3 className="text-sm font-semibold text-amber-400 flex items-center gap-2">
@@ -114,8 +114,7 @@ export default function DashboardPage() {
                 Paramètres Synchro
               </Link>
             </div>
-
-            {syncUrl && (
+            {googleAccessToken && (
               <div className="rounded-lg bg-background/30 border border-border/30 p-4 text-[11px] text-muted-foreground mt-2 space-y-2">
                 <div className="flex justify-between items-center">
                   <span>Statut :</span>

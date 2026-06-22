@@ -5,7 +5,7 @@ import { Layers3, CloudOff, RefreshCw, CheckCircle2, AlertCircle } from "lucide-
 import { useLibrary } from "@/context/LibraryContext";
 
 export function Header() {
-  const { syncUrl, syncStatus, lastSyncedAt } = useLibrary();
+  const { googleAccessToken, syncStatus, lastSyncedAt } = useLibrary();
 
   return (
     <header className="sticky top-0 z-30 h-14 border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
@@ -19,7 +19,7 @@ export function Header() {
 
         <div className="flex items-center gap-4">
           {/* Sync Status Badge */}
-          {syncUrl ? (
+          {googleAccessToken ? (
             <Link
               href="/settings"
               className="flex items-center gap-1.5 rounded-full bg-card/40 border border-border/40 px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground hover:border-violet-500/20 transition-all"

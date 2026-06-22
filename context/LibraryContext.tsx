@@ -10,7 +10,9 @@ interface LibraryState {
   templates: Template[];
   presets: Preset[];
   autocompleteSuggestions: Record<string, AutocompleteSuggestion[]>;
-  syncUrl: string;
+  googleClientId: string;
+  googleAccessToken: string | null;
+  googleUser: { name: string; email: string; picture: string } | null;
   autoSync: boolean;
   syncStatus: SyncStatus;
   lastSyncedAt: string | null;
@@ -18,8 +20,10 @@ interface LibraryState {
 }
 
 interface LibraryContextType extends LibraryState {
-  setSyncUrl: (url: string) => void;
+  setGoogleClientId: (id: string) => void;
   setAutoSync: (val: boolean) => void;
+  loginGoogle: () => void;
+  logoutGoogle: () => void;
   syncPull: () => Promise<boolean>;
   syncPush: () => Promise<boolean>;
   
@@ -79,11 +83,26 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
     return {};
   });
   
-  const [syncUrl, setSyncUrlState] = useState<string>(() => {
+  const [googleClientId, setGoogleClientIdState] = useState<string>(() => {
     if (typeof window !== "undefined") {
-      return localStorage.getItem("ptshelf_sync_url") || "";
+      return localStorage.getItem("ptshelf_google_client_id") || "";
     }
     return "";
+  });
+
+  const [googleAccessToken, setGoogleAccessTokenState] = useState<string | null>(() => {
+    if (typeof window !== "undefined") {
+      return sessionStorage.getItem("ptshelf_google_token") || null;
+    }
+    return null;
+  });
+
+  const [googleUser, setGoogleUser] = useState<{ name: string; email: string; picture: string } | null>(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("ptshelf_google_user");
+      return stored ? JSON.parse(stored) : null;
+    }
+    return null;
   });
 
   const [autoSync, setAutoSyncState] = useState<boolean>(() => {
@@ -107,21 +126,158 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
   const skipNextSync = useRef(false);
   const isFirstRender = useRef(true);
 
+  // Load Google Client library
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (document.getElementById("google-gsi-client")) return;
+    const script = document.createElement("script");
+    script.id = "google-gsi-client";
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    document.body.appendChild(script);
+  }, []);
+
+  const handleTokenExpiration = useCallback(() => {
+    setGoogleAccessTokenState(null);
+    setGoogleUser(null);
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem("ptshelf_google_token");
+      localStorage.removeItem("ptshelf_google_user");
+    }
+  }, []);
+
+  const fetchUserInfo = async (token: string) => {
+    try {
+      const response = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (response.ok) {
+        const userInfo = await response.json();
+        const user = {
+          name: userInfo.name || "",
+          email: userInfo.email || "",
+          picture: userInfo.picture || "",
+        };
+        setGoogleUser(user);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("ptshelf_google_user", JSON.stringify(user));
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch user info", err);
+    }
+  };
+
+  const loginGoogle = () => {
+    if (typeof window === "undefined" || !googleClientId) {
+      setSyncStatus("error");
+      setSyncError("Veuillez renseigner un Client ID Google valide.");
+      return;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const google = (window as any).google;
+    if (!google) {
+      setSyncStatus("error");
+      setSyncError("Le service d'authentification Google n'est pas chargé. Réessayez.");
+      return;
+    }
+
+    try {
+      const client = google.accounts.oauth2.initTokenClient({
+        client_id: googleClientId,
+        scope: "https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile",
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        callback: async (tokenResponse: any) => {
+          if (tokenResponse && tokenResponse.access_token) {
+            const token = tokenResponse.access_token;
+            setGoogleAccessTokenState(token);
+            if (typeof window !== "undefined") {
+              sessionStorage.setItem("ptshelf_google_token", token);
+            }
+            await fetchUserInfo(token);
+            setSyncStatus("success");
+            setSyncError(null);
+          } else {
+            setSyncStatus("error");
+            setSyncError("Échec de récupération du jeton d'accès Google.");
+          }
+        },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        error_callback: (err: any) => {
+          console.error("GSI Error:", err);
+          setSyncStatus("error");
+          setSyncError(err.message || "Erreur de connexion Google.");
+        }
+      });
+      client.requestAccessToken();
+    } catch (e: unknown) {
+      console.error(e);
+      setSyncStatus("error");
+      const errMsg = e instanceof Error ? e.message : String(e);
+      setSyncError(errMsg || "Erreur d'initialisation de l'authentification.");
+    }
+  };
+
+  const logoutGoogle = () => {
+    handleTokenExpiration();
+    setSyncStatus("idle");
+    setSyncError(null);
+  };
+
   const triggerSyncPull = useCallback(async (): Promise<boolean> => {
-    if (!syncUrl) return false;
+    if (!googleAccessToken) {
+      setSyncStatus("error");
+      setSyncError("Connectez-vous d'abord à votre compte Google.");
+      return false;
+    }
     setSyncStatus("syncing");
     setSyncError(null);
 
     try {
-      const response = await fetch(`/api/sync?url=${encodeURIComponent(syncUrl)}`);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      const searchRes = await fetch(
+        `https://www.googleapis.com/drive/v3/files?q=name='ptshelf_data.json' and trashed=false&fields=files(id,name)`,
+        {
+          headers: {
+            Authorization: `Bearer ${googleAccessToken}`,
+          },
+        }
+      );
+
+      if (searchRes.status === 401) {
+        handleTokenExpiration();
+        throw new Error("Token Google expiré. Veuillez vous reconnecter.");
       }
-      const data = await response.json();
-      
-      if (data.error) {
-        throw new Error(data.error);
+
+      if (!searchRes.ok) {
+        throw new Error(`Recherche Drive échouée: ${searchRes.statusText}`);
       }
+
+      const searchData = await searchRes.json();
+      const files = searchData.files || [];
+
+      if (files.length === 0) {
+        setSyncStatus("success");
+        return true;
+      }
+
+      const fileId = files[0].id;
+      const contentRes = await fetch(
+        `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
+        {
+          headers: {
+            Authorization: `Bearer ${googleAccessToken}`,
+          },
+        }
+      );
+
+      if (!contentRes.ok) {
+        throw new Error(`Téléchargement échoué: ${contentRes.statusText}`);
+      }
+
+      const data = await contentRes.json();
 
       skipNextSync.current = true;
       if (Array.isArray(data.folders)) setFolders(data.folders);
@@ -139,10 +295,10 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
     } catch (e: unknown) {
       console.error("Failed to pull data from Google Drive", e);
       setSyncStatus("error");
-      setSyncError(e instanceof Error ? e.message : "Failed to fetch from script");
+      setSyncError(e instanceof Error ? e.message : "Erreur de téléchargement");
       return false;
     }
-  }, [syncUrl]);
+  }, [googleAccessToken, handleTokenExpiration]);
 
   const triggerSyncPush = useCallback(async (overrideState?: {
     folders?: Folder[];
@@ -150,7 +306,11 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
     presets?: Preset[];
     autocompleteSuggestions?: Record<string, AutocompleteSuggestion[]>;
   }): Promise<boolean> => {
-    if (!syncUrl) return false;
+    if (!googleAccessToken) {
+      setSyncStatus("error");
+      setSyncError("Connectez-vous d'abord à votre compte Google.");
+      return false;
+    }
     setSyncStatus("syncing");
     setSyncError(null);
 
@@ -162,24 +322,69 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
     };
 
     try {
-      const response = await fetch("/api/sync", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          url: syncUrl,
-          data: payload,
-        }),
-      });
+      const searchRes = await fetch(
+        `https://www.googleapis.com/drive/v3/files?q=name='ptshelf_data.json' and trashed=false&fields=files(id,name)`,
+        {
+          headers: {
+            Authorization: `Bearer ${googleAccessToken}`,
+          },
+        }
+      );
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      if (searchRes.status === 401) {
+        handleTokenExpiration();
+        throw new Error("Token Google expiré. Veuillez vous reconnecter.");
       }
-      const resData = await response.json();
 
-      if (resData.error) {
-        throw new Error(resData.error);
+      if (!searchRes.ok) {
+        throw new Error(`Recherche Drive échouée: ${searchRes.statusText}`);
+      }
+
+      const searchData = await searchRes.json();
+      const files = searchData.files || [];
+
+      let fileId = "";
+
+      if (files.length === 0) {
+        const createMetadataRes = await fetch(
+          `https://www.googleapis.com/drive/v3/files`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${googleAccessToken}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              name: "ptshelf_data.json",
+              mimeType: "application/json",
+            }),
+          }
+        );
+
+        if (!createMetadataRes.ok) {
+          throw new Error(`Création de fichier échouée: ${createMetadataRes.statusText}`);
+        }
+
+        const createdFile = await createMetadataRes.json();
+        fileId = createdFile.id;
+      } else {
+        fileId = files[0].id;
+      }
+
+      const uploadRes = await fetch(
+        `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${googleAccessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload, null, 2),
+        }
+      );
+
+      if (!uploadRes.ok) {
+        throw new Error(`Sauvegarde échouée: ${uploadRes.statusText}`);
       }
 
       const now = new Date().toISOString();
@@ -192,10 +397,10 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
     } catch (e: unknown) {
       console.error("Failed to push data to Google Drive", e);
       setSyncStatus("error");
-      setSyncError(e instanceof Error ? e.message : "Failed to post to script");
+      setSyncError(e instanceof Error ? e.message : "Erreur de sauvegarde");
       return false;
     }
-  }, [syncUrl, folders, templates, presets, autocompleteSuggestions]);
+  }, [googleAccessToken, folders, templates, presets, autocompleteSuggestions, handleTokenExpiration]);
 
   // Save to localStorage when state changes
   useEffect(() => {
@@ -221,28 +426,28 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    if (autoSync && syncUrl) {
+    if (autoSync && googleAccessToken) {
       const timer = setTimeout(() => {
         triggerSyncPush();
       }, 1000); // Debounce sync by 1s
       return () => clearTimeout(timer);
     }
-  }, [folders, templates, presets, autocompleteSuggestions, autoSync, syncUrl, triggerSyncPush]);
+  }, [folders, templates, presets, autocompleteSuggestions, autoSync, googleAccessToken, triggerSyncPush]);
 
   // Initial Pull on mount if sync is configured
   useEffect(() => {
-    if (autoSync && syncUrl) {
+    if (autoSync && googleAccessToken) {
       const timer = setTimeout(() => {
         triggerSyncPull();
       }, 100);
       return () => clearTimeout(timer);
     }
-  }, [syncUrl, autoSync, triggerSyncPull]);
+  }, [googleAccessToken, autoSync, triggerSyncPull]);
 
-  const setSyncUrl = (url: string) => {
-    setSyncUrlState(url);
+  const setGoogleClientId = (id: string) => {
+    setGoogleClientIdState(id);
     if (typeof window !== "undefined") {
-      localStorage.setItem("ptshelf_sync_url", url);
+      localStorage.setItem("ptshelf_google_client_id", id);
     }
   };
 
@@ -426,13 +631,17 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
         templates,
         presets,
         autocompleteSuggestions,
-        syncUrl,
+        googleClientId,
+        googleAccessToken,
+        googleUser,
         autoSync,
         syncStatus,
         lastSyncedAt,
         syncError,
-        setSyncUrl,
+        setGoogleClientId,
         setAutoSync,
+        loginGoogle,
+        logoutGoogle,
         syncPull: triggerSyncPull,
         syncPush: triggerSyncPush,
         addFolder,
