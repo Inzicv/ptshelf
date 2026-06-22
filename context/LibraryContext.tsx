@@ -238,7 +238,12 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
       const response = await fetch(`/api/sync?email=${encodeURIComponent(googleUser.email)}`);
 
       if (!response.ok) {
-        throw new Error(`Erreur lors du chargement : ${response.statusText}`);
+        let serverError = "";
+        try {
+          const errBody = await response.json();
+          serverError = errBody.error || "";
+        } catch (_) {}
+        throw new Error(serverError || `Erreur lors du chargement (HTTP ${response.status})`);
       }
 
       const data = await response.json();
@@ -301,7 +306,12 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (!response.ok) {
-        throw new Error(`Erreur lors de la sauvegarde : ${response.statusText}`);
+        let serverError = "";
+        try {
+          const errBody = await response.json();
+          serverError = errBody.error || "";
+        } catch (_) {}
+        throw new Error(serverError || `Erreur lors de la sauvegarde (HTTP ${response.status})`);
       }
 
       const resData = await response.json();
