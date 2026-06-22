@@ -24,6 +24,73 @@ import {
 
 
 
+const handleSelectionToVariable = (
+  textareaId: string,
+  value: string,
+  setValue: (val: string) => void,
+  isConditional: boolean = false
+) => {
+  const textarea = document.getElementById(textareaId) as HTMLTextAreaElement | null;
+  if (!textarea) return;
+
+  const start = textarea.selectionStart;
+  const end = textarea.selectionEnd;
+  
+  if (start === end) {
+    alert("Veuillez d'abord sélectionner (surligner) du texte dans le champ de saisie.");
+    return;
+  }
+
+  const selectedText = value.substring(start, end);
+  const varName = prompt(
+    isConditional
+      ? `Entrez le nom de la condition pour le texte sélectionné "${selectedText}" :`
+      : `Entrez le nom de la variable pour le texte sélectionné "${selectedText}" :`
+  );
+  
+  if (!varName) return;
+  const cleanVarName = varName.trim().replace(/[^a-zA-Z0-9_]/g, "_");
+  if (!cleanVarName) {
+    alert("Nom de variable invalide. Utilisez uniquement des lettres, chiffres et underscores.");
+    return;
+  }
+
+  const before = value.substring(0, start);
+  const after = value.substring(end);
+  
+  let replacement = "";
+  if (isConditional) {
+    replacement = `[?${cleanVarName}]${selectedText}[/?${cleanVarName}]`;
+  } else {
+    replacement = `[${cleanVarName}]`;
+  }
+
+  const newValue = before + replacement + after;
+  setValue(newValue);
+
+  // Refocus the textarea and set cursor after the replacement
+  setTimeout(() => {
+    textarea.focus();
+    textarea.setSelectionRange(start, start + replacement.length);
+  }, 50);
+};
+
+const isConditionalOnly = (key: string, content: string): boolean => {
+  const escapedKey = key.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
+  // Check if it appears as a regular replacement
+  const regularCurly = new RegExp(`\\{\\{\\s*${escapedKey}\\s*\\}\\}`, "i");
+  const regularBracket = new RegExp(`\\[\\s*${escapedKey}\\s*\\]`, "i");
+  
+  const hasRegular = regularCurly.test(content) || regularBracket.test(content);
+  if (hasRegular) return false;
+
+  // Check if it appears as a conditional tag
+  const condCurly = new RegExp(`\\{\\{\\?\\s*${escapedKey}\\s*\\}\\}`, "i");
+  const condBracket = new RegExp(`\\[\\?\\s*${escapedKey}\\s*\\]`, "i");
+  
+  return condCurly.test(content) || condBracket.test(content);
+};
+
 interface PlaygroundProps {
   template: Template;
   presets: Preset[];
@@ -84,6 +151,27 @@ function TemplatePlayground({
   // Generate prompt
   const generatePrompt = () => {
     let finalPrompt = content;
+
+    // 1. Process conditional blocks first (supporting nested blocks using a loop)
+    const bracketCondRegex = /\[\?\s*([a-zA-Z0-9_]+)\s*\]([\s\S]*?)\[\/\?\s*\1\s*\]/g;
+    const curlyCondRegex = /\{\{\?\s*([a-zA-Z0-9_]+)\s*\}\}([\s\S]*?)\{\{\/\?\s*\1\s*\}\}/g;
+
+    let previousPrompt = "";
+    while (finalPrompt !== previousPrompt) {
+      previousPrompt = finalPrompt;
+      finalPrompt = finalPrompt.replace(bracketCondRegex, (match, key, blockContent) => {
+        const val = variableValues[key];
+        const isTruthy = val !== undefined && val !== "" && val !== "false" && val !== false;
+        return isTruthy ? blockContent : "";
+      });
+      finalPrompt = finalPrompt.replace(curlyCondRegex, (match, key, blockContent) => {
+        const val = variableValues[key];
+        const isTruthy = val !== undefined && val !== "" && val !== "false" && val !== false;
+        return isTruthy ? blockContent : "";
+      });
+    }
+
+    // 2. Replace regular variables in the remaining text
     template.variableIds.forEach((key) => {
       const val = variableValues[key];
       const replacement = val !== undefined && val !== "" ? val : `[${key}]`;
@@ -92,6 +180,7 @@ function TemplatePlayground({
       const bracketRegex = new RegExp(`\\[\\s*${escapedKey}\\s*\\]`, "g");
       finalPrompt = finalPrompt.replace(curlyRegex, replacement).replace(bracketRegex, replacement);
     });
+
     return finalPrompt;
   };
 

@@ -449,12 +449,27 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
     const bracketRegex = /\[([^\]]+)\]/g;
     const keys = new Set<string>();
     
+    const cleanKey = (key: string): string | null => {
+      const trimmed = key.trim();
+      // Ignore closing conditional tags like /?variable
+      if (trimmed.startsWith("/?")) {
+        return null;
+      }
+      // If it's a conditional variable like ?variable, extract the variable name
+      if (trimmed.startsWith("?")) {
+        return trimmed.substring(1).trim();
+      }
+      return trimmed;
+    };
+
     let match;
     while ((match = curlyRegex.exec(content)) !== null) {
-      keys.add(match[1].trim());
+      const key = cleanKey(match[1]);
+      if (key) keys.add(key);
     }
     while ((match = bracketRegex.exec(content)) !== null) {
-      keys.add(match[1].trim());
+      const key = cleanKey(match[1]);
+      if (key) keys.add(key);
     }
     return Array.from(keys);
   };

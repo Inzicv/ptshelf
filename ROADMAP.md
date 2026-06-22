@@ -63,12 +63,11 @@ Fonctionnalités :
 # V5
 * Template créator 2.0 : un agent IA permet de créer un template à partir d'un prompt
 * ajustement du template créator 2.0
-* auto-sync google drive (optionnel)
 
 # V6
-* création d'un utilisateur local
 * gestion des utilisateurs et connexion avec compte google
 * gestion des clés API personnelles
+
 
 # V7
 * connection aux IA personnelles de l'utilisateur (Chatgpt, Gemini, Claude, Suno, Midjourney)
