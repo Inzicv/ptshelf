@@ -17,7 +17,9 @@ import {
   Bookmark,
   Sparkles,
   RefreshCw,
+  X,
 } from "lucide-react";
+
 
 interface PlaygroundProps {
   template: Template;
@@ -415,6 +417,7 @@ function TemplatesContent() {
     templates,
     presets,
     projects,
+    folders,
     addTemplate,
     updateTemplate,
     deleteTemplate,
@@ -428,6 +431,14 @@ function TemplatesContent() {
 
   const [search, setSearch] = useState("");
   const [selectedProjectId, setSelectedProjectId] = useState<string>("");
+
+  // Create Modal State
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [newTemplateName, setNewTemplateName] = useState("");
+  const [newTemplateDesc, setNewTemplateDesc] = useState("");
+  const [newTemplateProjId, setNewTemplateProjId] = useState("");
+  const [newTemplateFoldId, setNewTemplateFoldId] = useState("");
+  const [newTemplateContent, setNewTemplateContent] = useState("");
 
   const templateIdParam = searchParams.get("id");
   const selectedTemplate = templates.find((t) => t.id === templateIdParam);
@@ -444,16 +455,43 @@ function TemplatesContent() {
     }
   }, [templates, templateIdParam, router, activeProject]);
 
-  const handleCreateTemplate = () => {
-    const newName = `Nouveau Template ${templates.length + 1}`;
-    const newContent = "Bonjour [nom], bienvenue dans {{projet}} !";
-    const templateId = addTemplate(newName, newContent, "Description facultative");
+  const openCreateModal = () => {
+    setNewTemplateName(`Nouveau Template ${templates.length + 1}`);
+    setNewTemplateDesc("");
+    setNewTemplateProjId(selectedProjectId || "");
+    setNewTemplateFoldId("");
+    setNewTemplateContent("Bonjour [nom], bienvenue dans {{projet}} !");
+    setIsCreateModalOpen(true);
+  };
 
-    if (selectedProjectId && activeProject) {
-      updateProject(selectedProjectId, {
-        templateIds: [...activeProject.templateIds, templateId],
-      });
+  const handleCreateSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTemplateName.trim()) return;
+
+    // 1. Add template
+    const templateId = addTemplate(
+      newTemplateName,
+      newTemplateContent || "Bonjour [nom], bienvenue dans {{projet}} !",
+      newTemplateDesc || undefined,
+      newTemplateFoldId || undefined
+    );
+
+    // 2. Associate with project if project selected
+    if (newTemplateProjId) {
+      const proj = projects.find((p) => p.id === newTemplateProjId);
+      if (proj) {
+        updateProject(newTemplateProjId, {
+          templateIds: [...(proj.templateIds || []), templateId],
+        });
+      }
+      setSelectedProjectId(newTemplateProjId);
     }
+
+    // 3. Clear/close
+    setIsCreateModalOpen(false);
+
+    // 4. Select the template
+    router.push(`/templates?id=${templateId}`);
   };
 
   const filteredTemplates = templates.filter((t) => {
@@ -488,7 +526,7 @@ function TemplatesContent() {
               ))}
             </select>
             <button
-              onClick={handleCreateTemplate}
+              onClick={openCreateModal}
               className="p-1.5 rounded-md bg-violet-600 hover:bg-violet-500 text-white transition-colors cursor-pointer shrink-0"
               title="Ajouter un template"
             >
@@ -562,7 +600,7 @@ function TemplatesContent() {
               {"Choisissez un template dans la colonne de gauche ou cliquez sur le bouton \"+\" pour concevoir un nouveau modèle de prompt."}
             </p>
             <button
-              onClick={handleCreateTemplate}
+              onClick={openCreateModal}
               className="mt-4 rounded-lg bg-violet-600 hover:bg-violet-500 text-white font-medium text-xs px-4 py-2 transition-colors cursor-pointer shadow-md shadow-violet-500/10"
             >
               Créer votre premier template
@@ -570,9 +608,133 @@ function TemplatesContent() {
           </div>
         )}
       </div>
+
+      {/* Creation Modal */}
+      {isCreateModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="relative w-full max-w-lg rounded-xl border border-border/50 bg-card p-6 shadow-xl space-y-4 text-left">
+            <button
+              onClick={() => setIsCreateModalOpen(false)}
+              className="absolute right-4 top-4 p-1 rounded hover:bg-muted text-muted-foreground transition-colors cursor-pointer"
+            >
+              <X className="size-4" />
+            </button>
+
+            <h2 className="text-lg font-bold text-foreground">
+              Créer un nouveau template
+            </h2>
+
+            <form onSubmit={handleCreateSubmit} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-muted-foreground" htmlFor="temp-name">
+                  Nom du template
+                </label>
+                <input
+                  id="temp-name"
+                  type="text"
+                  required
+                  value={newTemplateName}
+                  onChange={(e) => setNewTemplateName(e.target.value)}
+                  placeholder="ex: Email de relance client"
+                  className="w-full rounded-lg border border-border/50 bg-background px-3 py-2 text-sm text-foreground focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500/50"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-muted-foreground" htmlFor="temp-desc">
+                  Description
+                </label>
+                <input
+                  id="temp-desc"
+                  type="text"
+                  value={newTemplateDesc}
+                  onChange={(e) => setNewTemplateDesc(e.target.value)}
+                  placeholder="ex: Utilisé pour le suivi commercial hebdomadaire"
+                  className="w-full rounded-lg border border-border/50 bg-background px-3 py-2 text-sm text-foreground focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500/50"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-muted-foreground" htmlFor="temp-project">
+                    Associer à un projet
+                  </label>
+                  <select
+                    id="temp-project"
+                    value={newTemplateProjId}
+                    onChange={(e) => setNewTemplateProjId(e.target.value)}
+                    className="w-full rounded-lg border border-border/50 bg-background px-3 py-2 text-sm text-foreground focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500/50 cursor-pointer"
+                  >
+                    <option value="">-- Aucun projet --</option>
+                    {projects.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-muted-foreground" htmlFor="temp-folder">
+                    Associer à un dossier
+                  </label>
+                  <select
+                    id="temp-folder"
+                    value={newTemplateFoldId}
+                    onChange={(e) => setNewTemplateFoldId(e.target.value)}
+                    className="w-full rounded-lg border border-border/50 bg-background px-3 py-2 text-sm text-foreground focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500/50 cursor-pointer"
+                  >
+                    <option value="">-- Aucun dossier --</option>
+                    {folders.map((f) => (
+                      <option key={f.id} value={f.id}>
+                        {f.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-muted-foreground" htmlFor="temp-content">
+                  Modèle de prompt initial
+                </label>
+                <textarea
+                  id="temp-content"
+                  required
+                  value={newTemplateContent}
+                  onChange={(e) => setNewTemplateContent(e.target.value)}
+                  rows={4}
+                  className="w-full rounded-lg border border-border/50 bg-background px-3 py-2 text-sm text-foreground font-mono focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500/50"
+                  placeholder="Bonjour [nom], ..."
+                />
+                <p className="text-[10px] text-muted-foreground/60 leading-relaxed">
+                  {"Utilisez `[variable]` ou `{{variable}}` pour insérer des champs dynamiques."}
+                </p>
+              </div>
+
+              <div className="flex gap-3 justify-end pt-2 border-t border-border/30">
+                <button
+                  type="button"
+                  onClick={() => setIsCreateModalOpen(false)}
+                  className="rounded-lg border border-border bg-background hover:bg-muted px-4 py-2 text-sm font-medium transition-colors text-foreground cursor-pointer"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-lg bg-violet-600 hover:bg-violet-500 text-white px-4 py-2 text-sm font-medium transition-colors cursor-pointer shadow-md shadow-violet-500/10"
+                >
+                  Créer
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
 
 export default function TemplatesPage() {
   return (

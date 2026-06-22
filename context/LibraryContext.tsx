@@ -34,7 +34,7 @@ interface LibraryContextType extends LibraryState {
   deleteFolder: (id: EntityId) => void;
   
   // Templates
-  addTemplate: (name: string, content: string, description?: string) => string;
+  addTemplate: (name: string, content: string, description?: string, folderId?: string) => string;
   updateTemplate: (id: EntityId, updates: Partial<Omit<Template, "id" | "createdAt" | "updatedAt">>) => void;
   deleteTemplate: (id: EntityId) => void;
   
@@ -336,7 +336,7 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Templates CRUD
-  const addTemplate = (name: string, content: string, description?: string) => {
+  const addTemplate = (name: string, content: string, description?: string, folderId?: string) => {
     const variableKeys = extractVariableKeys(content);
     const newId = generateId();
     const newTemplate: Template = {
@@ -345,6 +345,7 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
       description,
       content,
       variableIds: variableKeys, // Store names/keys of variables
+      folderId,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };

@@ -25,6 +25,7 @@ export interface Template {
   description?: string;
   content: string;
   variableIds: EntityId[];
+  folderId?: EntityId;
   createdAt: ISODateString;
   updatedAt: ISODateString;
 }
