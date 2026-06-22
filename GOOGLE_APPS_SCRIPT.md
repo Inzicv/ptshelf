@@ -40,10 +40,10 @@ function getOrCreateFile() {
     return files.next();
   } else {
     const initialData = {
-      projects: [],
       folders: [],
       templates: [],
-      presets: []
+      presets: [],
+      autocompleteSuggestions: {}
     };
     return DriveApp.createFile(FILE_NAME, JSON.stringify(initialData, null, 2));
   }

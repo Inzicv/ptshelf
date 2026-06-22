@@ -91,10 +91,10 @@ function getOrCreateFile() {
     return files.next();
   } else {
     const initialData = {
-      projects: [],
       folders: [],
       templates: [],
-      presets: []
+      presets: [],
+      autocompleteSuggestions: {}
     };
     return DriveApp.createFile(FILE_NAME, JSON.stringify(initialData, null, 2));
   }
@@ -342,7 +342,7 @@ function getOrCreateFile() {
 function doGet(e) {
   try {
     const file = getOrCreateFile();
-    const content = file.getContentText();
+    const content = file.getBlob().getDataAsString();
     return ContentService.createTextOutput(content)
       .setMimeType(ContentService.MimeType.JSON);
   } catch (err) { ... }
@@ -352,7 +352,7 @@ function doPost(e) {
   try {
     const postData = JSON.parse(e.postData.contents);
     const file = getOrCreateFile();
-    file.setContent(JSON.stringify(postData));
+    file.setContent(JSON.stringify(postData, null, 2));
     ...
   } catch (err) { ... }
 }
