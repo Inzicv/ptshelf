@@ -22,9 +22,9 @@ import {
 interface PlaygroundProps {
   template: Template;
   presets: Preset[];
-  updateTemplate: (id: string, updates: any) => void;
+  updateTemplate: (id: string, updates: Partial<Omit<Template, "id" | "createdAt" | "updatedAt">>) => void;
   deleteTemplate: (id: string) => void;
-  addPreset: (name: string, templateId: string, values: Record<string, any>) => void;
+  addPreset: (name: string, templateId: string, values: Record<string, string | number | boolean>) => void;
   deletePreset: (id: string) => void;
 }
 
@@ -42,26 +42,18 @@ function TemplatePlayground({
   const [content, setContent] = useState(template.content);
 
   // Variable values
-  const [variableValues, setVariableValues] = useState<Record<string, string>>({});
+  const [variableValues, setVariableValues] = useState<Record<string, string>>(() => {
+    const initialValues: Record<string, string> = {};
+    template.variableIds.forEach((key) => {
+      initialValues[key] = "";
+    });
+    return initialValues;
+  });
   
   // Preset state
   const [newPresetName, setNewPresetName] = useState("");
   const [isSavingPreset, setIsSavingPreset] = useState(false);
   const [copiedPrompt, setCopiedPrompt] = useState(false);
-
-  // Reset local state if template prop changes (backup mechanism, though key reset usually handles it)
-  useEffect(() => {
-    setName(template.name);
-    setDescription(template.description || "");
-    setContent(template.content);
-    setIsEditing(false);
-
-    const initialValues: Record<string, string> = {};
-    template.variableIds.forEach((key) => {
-      initialValues[key] = "";
-    });
-    setVariableValues(initialValues);
-  }, [template]);
 
   const handleSaveTemplate = () => {
     if (!name.trim()) return;
