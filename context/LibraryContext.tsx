@@ -34,12 +34,12 @@ interface LibraryContextType extends LibraryState {
   deleteFolder: (id: EntityId) => void;
   
   // Templates
-  addTemplate: (name: string, content: string, description?: string) => void;
+  addTemplate: (name: string, content: string, description?: string) => string;
   updateTemplate: (id: EntityId, updates: Partial<Omit<Template, "id" | "createdAt" | "updatedAt">>) => void;
   deleteTemplate: (id: EntityId) => void;
   
   // Presets
-  addPreset: (name: string, templateId: EntityId, values: Record<string, string | number | boolean>) => void;
+  addPreset: (name: string, templateId: EntityId, projectId: EntityId, values: Record<string, string | number | boolean>) => void;
   updatePreset: (id: EntityId, updates: Partial<Omit<Preset, "id" | "createdAt" | "updatedAt">>) => void;
   deletePreset: (id: EntityId) => void;
 }
@@ -285,6 +285,7 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
 
   const deleteProject = (id: EntityId) => {
     setProjects((prev) => prev.filter((proj) => proj.id !== id));
+    setPresets((prev) => prev.filter((pres) => pres.projectId !== id));
   };
 
   // Folders CRUD
@@ -337,11 +338,9 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
   // Templates CRUD
   const addTemplate = (name: string, content: string, description?: string) => {
     const variableKeys = extractVariableKeys(content);
-    // Variables don't have separate collection state, they are embedded or computed
-    // But we map them to variableIds in the Template if necessary
-    // Here we'll just store the variable keys directly or as IDs
+    const newId = generateId();
     const newTemplate: Template = {
-      id: generateId(),
+      id: newId,
       name,
       description,
       content,
@@ -350,6 +349,7 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
       updatedAt: new Date().toISOString(),
     };
     setTemplates((prev) => [...prev, newTemplate]);
+    return newId;
   };
 
   const updateTemplate = (id: EntityId, updates: Partial<Omit<Template, "id" | "createdAt" | "updatedAt">>) => {
@@ -384,10 +384,11 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Presets CRUD
-  const addPreset = (name: string, templateId: EntityId, values: Record<string, string | number | boolean>) => {
+  const addPreset = (name: string, templateId: EntityId, projectId: EntityId, values: Record<string, string | number | boolean>) => {
     const newPreset: Preset = {
       id: generateId(),
       name,
+      projectId,
       templateId,
       values,
       createdAt: new Date().toISOString(),

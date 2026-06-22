@@ -22,15 +22,17 @@ import {
 interface PlaygroundProps {
   template: Template;
   presets: Preset[];
+  activeProjectId: string | null;
   updateTemplate: (id: string, updates: Partial<Omit<Template, "id" | "createdAt" | "updatedAt">>) => void;
   deleteTemplate: (id: string) => void;
-  addPreset: (name: string, templateId: string, values: Record<string, string | number | boolean>) => void;
+  addPreset: (name: string, templateId: string, projectId: string, values: Record<string, string | number | boolean>) => void;
   deletePreset: (id: string) => void;
 }
 
 function TemplatePlayground({
   template,
   presets,
+  activeProjectId,
   updateTemplate,
   deleteTemplate,
   addPreset,
@@ -88,7 +90,9 @@ function TemplatePlayground({
     setTimeout(() => setCopiedPrompt(false), 2000);
   };
 
-  const currentPresets = presets.filter((p) => p.templateId === template.id);
+  const currentPresets = activeProjectId
+    ? presets.filter((p) => p.templateId === template.id && p.projectId === activeProjectId)
+    : [];
 
   const handleApplyPreset = (preset: Preset) => {
     const updatedValues: Record<string, string> = {};
@@ -100,8 +104,8 @@ function TemplatePlayground({
 
   const handleSavePreset = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPresetName.trim()) return;
-    addPreset(newPresetName, template.id, { ...variableValues });
+    if (!newPresetName.trim() || !activeProjectId) return;
+    addPreset(newPresetName, template.id, activeProjectId, { ...variableValues });
     setNewPresetName("");
     setIsSavingPreset(false);
   };
@@ -279,7 +283,7 @@ function TemplatePlayground({
                 <Bookmark className="size-4 text-pink-400" />
                 Presets
               </h3>
-              {template.variableIds.length > 0 && (
+              {template.variableIds.length > 0 && activeProjectId && (
                 <button
                   onClick={() => setIsSavingPreset(true)}
                   className="text-xs font-bold text-pink-400 hover:text-pink-300 transition-colors flex items-center gap-1 cursor-pointer"
@@ -290,7 +294,7 @@ function TemplatePlayground({
               )}
             </div>
 
-            {isSavingPreset && (
+            {isSavingPreset && activeProjectId && (
               <form
                 onSubmit={handleSavePreset}
                 className="flex items-end gap-2 p-3.5 rounded-lg border border-pink-500/20 bg-pink-500/5 animate-in slide-in-from-top duration-200"
@@ -329,9 +333,13 @@ function TemplatePlayground({
               </form>
             )}
 
-            {currentPresets.length === 0 ? (
+            {!activeProjectId ? (
               <p className="text-xs text-muted-foreground/75 leading-relaxed py-1">
-                {"Aucun preset enregistré pour ce template. Saisissez des valeurs dans le formulaire et enregistrez-les en preset pour les réutiliser rapidement."}
+                {"Veuillez sélectionner un projet dans la barre latérale pour charger ou créer des presets."}
+              </p>
+            ) : currentPresets.length === 0 ? (
+              <p className="text-xs text-muted-foreground/75 leading-relaxed py-1">
+                {"Aucun preset enregistré pour ce template dans ce projet. Saisissez des valeurs dans le formulaire et enregistrez-les en preset."}
               </p>
             ) : (
               <div className="flex flex-wrap gap-2 pt-1">
@@ -406,46 +414,89 @@ function TemplatesContent() {
   const {
     templates,
     presets,
+    projects,
     addTemplate,
     updateTemplate,
     deleteTemplate,
     addPreset,
     deletePreset,
+    updateProject,
   } = useLibrary();
 
   const searchParams = useSearchParams();
   const router = useRouter();
 
   const [search, setSearch] = useState("");
+  const [selectedProjectId, setSelectedProjectId] = useState<string>("");
 
   const templateIdParam = searchParams.get("id");
   const selectedTemplate = templates.find((t) => t.id === templateIdParam);
 
+  const activeProject = projects.find((p) => p.id === selectedProjectId);
+
   // Auto select template on mount or list update
   useEffect(() => {
-    if (templates.length > 0 && !templateIdParam) {
-      router.replace(`/templates?id=${templates[templates.length - 1].id}`);
+    const list = activeProject
+      ? templates.filter((t) => activeProject.templateIds.includes(t.id))
+      : templates;
+    if (list.length > 0 && !templateIdParam) {
+      router.replace(`/templates?id=${list[list.length - 1].id}`);
     }
-  }, [templates, templateIdParam, router]);
+  }, [templates, templateIdParam, router, activeProject]);
 
   const handleCreateTemplate = () => {
     const newName = `Nouveau Template ${templates.length + 1}`;
     const newContent = "Bonjour [nom], bienvenue dans {{projet}} !";
-    addTemplate(newName, newContent, "Description facultative");
+    const templateId = addTemplate(newName, newContent, "Description facultative");
+
+    if (selectedProjectId && activeProject) {
+      updateProject(selectedProjectId, {
+        templateIds: [...activeProject.templateIds, templateId],
+      });
+    }
   };
 
-  const filteredTemplates = templates.filter(
-    (t) =>
+  const filteredTemplates = templates.filter((t) => {
+    const matchesSearch =
       t.name.toLowerCase().includes(search.toLowerCase()) ||
-      t.content.toLowerCase().includes(search.toLowerCase())
-  );
+      t.content.toLowerCase().includes(search.toLowerCase());
+
+    if (!matchesSearch) return false;
+    if (activeProject) {
+      return activeProject.templateIds.includes(t.id);
+    }
+    return true;
+  });
 
   return (
     <div className="flex h-full flex-col md:flex-row">
       {/* Sidebar List */}
       <div className="w-full md:w-80 shrink-0 border-b md:border-b-0 md:border-r border-border/45 bg-card/5 flex flex-col h-1/2 md:h-full">
-        <div className="p-4 border-b border-border/40 flex items-center justify-between gap-3">
-          <div className="relative flex-1">
+        {/* Sidebar Header */}
+        <div className="p-4 border-b border-border/40 flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <select
+              value={selectedProjectId}
+              onChange={(e) => setSelectedProjectId(e.target.value)}
+              className="flex-1 rounded-md border border-border/50 bg-background/50 px-2 py-1.5 text-xs text-foreground focus:border-violet-500 focus:outline-none cursor-pointer"
+            >
+              <option value="">-- Tous les projets --</option>
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={handleCreateTemplate}
+              className="p-1.5 rounded-md bg-violet-600 hover:bg-violet-500 text-white transition-colors cursor-pointer shrink-0"
+              title="Ajouter un template"
+            >
+              <Plus className="size-3.5" />
+            </button>
+          </div>
+
+          <div className="relative">
             <Search className="absolute left-2.5 top-2 size-3.5 text-muted-foreground/60" />
             <input
               type="text"
@@ -455,13 +506,6 @@ function TemplatesContent() {
               className="w-full rounded-md border border-border/50 bg-background/50 px-8 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/60 focus:border-violet-500 focus:outline-none"
             />
           </div>
-          <button
-            onClick={handleCreateTemplate}
-            className="p-2 rounded-md bg-violet-600 hover:bg-violet-500 text-white transition-colors cursor-pointer"
-            title="Ajouter un template"
-          >
-            <Plus className="size-3.5" />
-          </button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-2 space-y-1">
@@ -504,6 +548,7 @@ function TemplatesContent() {
             key={selectedTemplate.id}
             template={selectedTemplate}
             presets={presets}
+            activeProjectId={selectedProjectId || null}
             updateTemplate={updateTemplate}
             deleteTemplate={deleteTemplate}
             addPreset={addPreset}

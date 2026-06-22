@@ -44,6 +44,7 @@ export interface Preset {
   id: EntityId;
   name: string;
   description?: string;
+  projectId: EntityId;
   templateId: EntityId;
   values: Record<string, VariableValue>;
   createdAt: ISODateString;

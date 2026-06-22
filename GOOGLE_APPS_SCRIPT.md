@@ -12,7 +12,7 @@ const FILE_NAME = "ptshelf_data.json";
 function doGet(e) {
   try {
     const file = getOrCreateFile();
-    const content = file.getContentText();
+    const content = file.getBlob().getDataAsString();
     return ContentService.createTextOutput(content)
       .setMimeType(ContentService.MimeType.JSON);
   } catch (err) {
