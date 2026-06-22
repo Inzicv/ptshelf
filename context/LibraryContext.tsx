@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from "react";
-import { Project, Folder, Template, Preset, EntityId } from "@/types";
+import { Project, Folder, Template, Preset, EntityId, AutocompleteSuggestion } from "@/types";
 
 export type SyncStatus = "idle" | "syncing" | "success" | "error";
 
@@ -10,6 +10,7 @@ interface LibraryState {
   folders: Folder[];
   templates: Template[];
   presets: Preset[];
+  autocompleteSuggestions: Record<string, AutocompleteSuggestion[]>;
   syncUrl: string;
   autoSync: boolean;
   syncStatus: SyncStatus;
@@ -42,6 +43,11 @@ interface LibraryContextType extends LibraryState {
   addPreset: (name: string, templateId: EntityId, projectId: EntityId, values: Record<string, string | number | boolean>) => void;
   updatePreset: (id: EntityId, updates: Partial<Omit<Preset, "id" | "createdAt" | "updatedAt">>) => void;
   deletePreset: (id: EntityId) => void;
+
+  // Autocomplete suggestions
+  addAutocompleteSuggestion: (varKey: string, value: string) => void;
+  toggleAutocompleteSuggestion: (varKey: string, id: string) => void;
+  deleteAutocompleteSuggestion: (varKey: string, id: string) => void;
 }
 
 const LibraryContext = createContext<LibraryContextType | undefined>(undefined);
@@ -77,6 +83,14 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
       return stored ? JSON.parse(stored) : [];
     }
     return [];
+  });
+
+  const [autocompleteSuggestions, setAutocompleteSuggestions] = useState<Record<string, AutocompleteSuggestion[]>>(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("ptshelf_autocomplete");
+      return stored ? JSON.parse(stored) : {};
+    }
+    return {};
   });
   
   const [syncUrl, setSyncUrlState] = useState<string>(() => {
@@ -129,6 +143,7 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
       if (Array.isArray(data.folders)) setFolders(data.folders);
       if (Array.isArray(data.templates)) setTemplates(data.templates);
       if (Array.isArray(data.presets)) setPresets(data.presets);
+      if (data.autocompleteSuggestions) setAutocompleteSuggestions(data.autocompleteSuggestions);
 
       const now = new Date().toISOString();
       setLastSyncedAt(now);
@@ -150,6 +165,7 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
     folders?: Folder[];
     templates?: Template[];
     presets?: Preset[];
+    autocompleteSuggestions?: Record<string, AutocompleteSuggestion[]>;
   }): Promise<boolean> => {
     if (!syncUrl) return false;
     setSyncStatus("syncing");
@@ -160,6 +176,7 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
       folders: overrideState?.folders ?? folders,
       templates: overrideState?.templates ?? templates,
       presets: overrideState?.presets ?? presets,
+      autocompleteSuggestions: overrideState?.autocompleteSuggestions ?? autocompleteSuggestions,
     };
 
     try {
@@ -196,7 +213,7 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
       setSyncError(e instanceof Error ? e.message : "Failed to post to script");
       return false;
     }
-  }, [syncUrl, projects, folders, templates, presets]);
+  }, [syncUrl, projects, folders, templates, presets, autocompleteSuggestions]);
 
   // Save to localStorage when state changes
   useEffect(() => {
@@ -205,10 +222,11 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem("ptshelf_folders", JSON.stringify(folders));
       localStorage.setItem("ptshelf_templates", JSON.stringify(templates));
       localStorage.setItem("ptshelf_presets", JSON.stringify(presets));
+      localStorage.setItem("ptshelf_autocomplete", JSON.stringify(autocompleteSuggestions));
     } catch (e) {
       console.error("Failed to save state to local storage", e);
     }
-  }, [projects, folders, templates, presets]);
+  }, [projects, folders, templates, presets, autocompleteSuggestions]);
 
   // Handle AutoSync when data changes
   useEffect(() => {
@@ -228,7 +246,7 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
       }, 1000); // Debounce sync by 1s
       return () => clearTimeout(timer);
     }
-  }, [projects, folders, templates, presets, autoSync, syncUrl, triggerSyncPush]);
+  }, [projects, folders, templates, presets, autocompleteSuggestions, autoSync, syncUrl, triggerSyncPush]);
 
   // Initial Pull on mount if sync is configured
   useEffect(() => {
@@ -412,6 +430,55 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
     setPresets((prev) => prev.filter((pres) => pres.id !== id));
   };
 
+  // Autocomplete Suggestions CRUD
+  const addAutocompleteSuggestion = (varKey: string, value: string) => {
+    if (!value || !value.trim()) return;
+    const cleanValue = value.trim();
+    
+    setAutocompleteSuggestions((prev) => {
+      const currentList = prev[varKey] || [];
+      // If value already exists, don't duplicate
+      if (currentList.some((item) => item.value === cleanValue)) {
+        return prev;
+      }
+      
+      const newSuggestion: AutocompleteSuggestion = {
+        id: generateId(),
+        value: cleanValue,
+        enabled: true,
+      };
+      
+      return {
+        ...prev,
+        [varKey]: [...currentList, newSuggestion],
+      };
+    });
+  };
+
+  const toggleAutocompleteSuggestion = (varKey: string, id: string) => {
+    setAutocompleteSuggestions((prev) => {
+      const currentList = prev[varKey] || [];
+      const updatedList = currentList.map((item) =>
+        item.id === id ? { ...item, enabled: !item.enabled } : item
+      );
+      return {
+        ...prev,
+        [varKey]: updatedList,
+      };
+    });
+  };
+
+  const deleteAutocompleteSuggestion = (varKey: string, id: string) => {
+    setAutocompleteSuggestions((prev) => {
+      const currentList = prev[varKey] || [];
+      const updatedList = currentList.filter((item) => item.id !== id);
+      return {
+        ...prev,
+        [varKey]: updatedList,
+      };
+    });
+  };
+
   return (
     <LibraryContext.Provider
       value={{
@@ -419,6 +486,7 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
         folders,
         templates,
         presets,
+        autocompleteSuggestions,
         syncUrl,
         autoSync,
         syncStatus,
@@ -440,6 +508,9 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
         addPreset,
         updatePreset,
         deletePreset,
+        addAutocompleteSuggestion,
+        toggleAutocompleteSuggestion,
+        deleteAutocompleteSuggestion,
       }}
     >
       {children}

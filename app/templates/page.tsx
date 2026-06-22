@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useLibrary } from "@/context/LibraryContext";
-import { Template, Preset } from "@/types";
+import { Template, Preset, AutocompleteSuggestion } from "@/types";
 import {
   Shapes,
   Plus,
@@ -18,7 +18,10 @@ import {
   Sparkles,
   RefreshCw,
   X,
+  Eye,
+  EyeOff,
 } from "lucide-react";
+
 
 
 interface PlaygroundProps {
@@ -29,6 +32,10 @@ interface PlaygroundProps {
   deleteTemplate: (id: string) => void;
   addPreset: (name: string, templateId: string, projectId: string, values: Record<string, string | number | boolean>) => void;
   deletePreset: (id: string) => void;
+  autocompleteSuggestions: Record<string, AutocompleteSuggestion[]>;
+  addAutocompleteSuggestion: (varKey: string, value: string) => void;
+  toggleAutocompleteSuggestion: (varKey: string, id: string) => void;
+  deleteAutocompleteSuggestion: (varKey: string, id: string) => void;
 }
 
 function TemplatePlayground({
@@ -39,11 +46,18 @@ function TemplatePlayground({
   deleteTemplate,
   addPreset,
   deletePreset,
+  autocompleteSuggestions,
+  addAutocompleteSuggestion,
+  toggleAutocompleteSuggestion,
+  deleteAutocompleteSuggestion,
 }: PlaygroundProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(template.name);
   const [description, setDescription] = useState(template.description || "");
   const [content, setContent] = useState(template.content);
+
+  // Track focused variable key for suggestions dropdown
+  const [focusedVarKey, setFocusedVarKey] = useState<string | null>(null);
 
   // Variable values
   const [variableValues, setVariableValues] = useState<Record<string, string>>(() => {
@@ -89,6 +103,14 @@ function TemplatePlayground({
     if (!finalPrompt) return;
     navigator.clipboard.writeText(finalPrompt);
     setCopiedPrompt(true);
+
+    // Save variable values to autocomplete suggestions
+    Object.entries(variableValues).forEach(([key, value]) => {
+      if (value.trim()) {
+        addAutocompleteSuggestion(key, value);
+      }
+    });
+
     setTimeout(() => setCopiedPrompt(false), 2000);
   };
 
@@ -108,9 +130,18 @@ function TemplatePlayground({
     e.preventDefault();
     if (!newPresetName.trim() || !activeProjectId) return;
     addPreset(newPresetName, template.id, activeProjectId, { ...variableValues });
+
+    // Save variable values to autocomplete suggestions
+    Object.entries(variableValues).forEach(([key, value]) => {
+      if (value.trim()) {
+        addAutocompleteSuggestion(key, value);
+      }
+    });
+
     setNewPresetName("");
     setIsSavingPreset(false);
   };
+
 
   return (
     <div className="flex-1 p-6 sm:p-8 max-w-5xl space-y-6">
@@ -252,7 +283,7 @@ function TemplatePlayground({
             ) : (
               <div className="space-y-4 pt-1">
                 {template.variableIds.map((key) => (
-                  <div key={key} className="flex flex-col gap-1.5">
+                  <div key={key} className="flex flex-col gap-1.5 relative">
                     <label
                       className="text-xs font-semibold text-muted-foreground/80 capitalize"
                       htmlFor={`var-${key}`}
@@ -269,9 +300,90 @@ function TemplatePlayground({
                           [key]: e.target.value,
                         }))
                       }
+                      onFocus={() => setFocusedVarKey(key)}
+                      onBlur={() => {
+                        // Delay closing the dropdown slightly so clicks on options register first
+                        setTimeout(() => {
+                          setFocusedVarKey((current) => current === key ? null : current);
+                        }, 200);
+                      }}
                       placeholder={`Saisir la valeur pour ${key}...`}
                       className="w-full rounded-lg border border-border/50 bg-background/50 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/50 focus:border-violet-500 focus:outline-none"
                     />
+
+                    {/* Suggestions Dropdown */}
+                    {focusedVarKey === key && (autocompleteSuggestions[key] || []).length > 0 && (
+                      <div 
+                        className="absolute left-0 right-0 top-full mt-1 z-40 max-h-48 overflow-y-auto rounded-lg border border-border/60 bg-card p-1.5 shadow-xl space-y-1 animate-in fade-in slide-in-from-top-1 duration-150"
+                        onMouseDown={(e) => {
+                          // Prevent input from losing focus when clicking inside the dropdown
+                          e.preventDefault();
+                        }}
+                      >
+                        <div className="text-[10px] font-bold text-muted-foreground px-2 py-1 uppercase tracking-wider border-b border-border/30 mb-1 flex justify-between">
+                          <span>Suggestions</span>
+                          <span>{(autocompleteSuggestions[key] || []).filter(s => s.enabled).length} actives</span>
+                        </div>
+                        {(autocompleteSuggestions[key] || []).map((suggestion) => (
+                          <div
+                            key={suggestion.id}
+                            className={`flex items-center justify-between rounded-md px-2.5 py-1.5 transition-all text-xs ${
+                              suggestion.enabled
+                                ? "hover:bg-violet-600/10 text-foreground"
+                                : "text-muted-foreground/45 opacity-60"
+                            }`}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (suggestion.enabled) {
+                                  setVariableValues((prev) => ({
+                                    ...prev,
+                                    [key]: suggestion.value,
+                                  }));
+                                  setFocusedVarKey(null);
+                                }
+                              }}
+                              className={`flex-1 text-left truncate mr-2 font-medium ${
+                                suggestion.enabled ? "cursor-pointer" : "cursor-not-allowed"
+                              }`}
+                            >
+                              {suggestion.value}
+                            </button>
+                            
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              {/* Toggle Active/Inactive */}
+                              <button
+                                type="button"
+                                onClick={() => toggleAutocompleteSuggestion(key, suggestion.id)}
+                                className={`p-1 rounded transition-colors cursor-pointer ${
+                                  suggestion.enabled 
+                                    ? "hover:bg-violet-500/20 text-violet-400" 
+                                    : "hover:bg-muted text-muted-foreground/40 hover:text-muted-foreground"
+                                }`}
+                                title={suggestion.enabled ? "Désactiver la suggestion" : "Activer la suggestion"}
+                              >
+                                {suggestion.enabled ? (
+                                  <Eye className="size-3.5" />
+                                ) : (
+                                  <EyeOff className="size-3.5" />
+                                )}
+                              </button>
+                              
+                              {/* Delete */}
+                              <button
+                                type="button"
+                                onClick={() => deleteAutocompleteSuggestion(key, suggestion.id)}
+                                className="p-1 rounded hover:bg-rose-500/15 text-muted-foreground/50 hover:text-rose-400 transition-colors cursor-pointer"
+                                title="Supprimer la suggestion"
+                              >
+                                <X className="size-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -424,6 +536,10 @@ function TemplatesContent() {
     addPreset,
     deletePreset,
     updateProject,
+    autocompleteSuggestions,
+    addAutocompleteSuggestion,
+    toggleAutocompleteSuggestion,
+    deleteAutocompleteSuggestion,
   } = useLibrary();
 
   const searchParams = useSearchParams();
@@ -591,6 +707,10 @@ function TemplatesContent() {
             deleteTemplate={deleteTemplate}
             addPreset={addPreset}
             deletePreset={deletePreset}
+            autocompleteSuggestions={autocompleteSuggestions}
+            addAutocompleteSuggestion={addAutocompleteSuggestion}
+            toggleAutocompleteSuggestion={toggleAutocompleteSuggestion}
+            deleteAutocompleteSuggestion={deleteAutocompleteSuggestion}
           />
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">

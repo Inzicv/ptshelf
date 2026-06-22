@@ -51,3 +51,9 @@ export interface Preset {
   createdAt: ISODateString;
   updatedAt: ISODateString;
 }
+
+export interface AutocompleteSuggestion {
+  id: EntityId;
+  value: string;
+  enabled: boolean;
+}
