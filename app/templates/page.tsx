@@ -390,110 +390,155 @@ function TemplatePlayground({
               </p>
             ) : (
               <div className="space-y-4 pt-1">
-                {template.variableIds.map((key) => (
-                  <div key={key} className="flex flex-col gap-1.5 relative">
-                    <label
-                      className="text-xs font-semibold text-muted-foreground/80 capitalize"
-                      htmlFor={`var-${key}`}
-                    >
-                      {key}
-                    </label>
-                    <input
-                      id={`var-${key}`}
-                      type="text"
-                      value={variableValues[key] || ""}
-                      onChange={(e) =>
-                        setVariableValues((prev) => ({
-                          ...prev,
-                          [key]: e.target.value,
-                        }))
-                      }
-                      onFocus={() => setFocusedVarKey(key)}
-                      onBlur={() => {
-                        // Delay closing the dropdown slightly so clicks on options register first
-                        setTimeout(() => {
-                          setFocusedVarKey((current) => current === key ? null : current);
-                        }, 200);
-                      }}
-                      placeholder={`Saisir la valeur pour ${key}...`}
-                      className="w-full rounded-lg border border-border/50 bg-background/50 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/50 focus:border-violet-500 focus:outline-none"
-                    />
+                {template.variableIds.map((key) => {
+                  const isCondOnly = isConditionalOnly(key, template.content);
 
-                    {/* Suggestions Dropdown */}
-                    {focusedVarKey === key && (autocompleteSuggestions[key] || []).length > 0 && (
-                      <div 
-                        className="absolute left-0 right-0 top-full mt-1 z-40 max-h-48 overflow-y-auto rounded-lg border border-border/60 bg-card p-1.5 shadow-xl space-y-1 animate-in fade-in slide-in-from-top-1 duration-150"
-                        onMouseDown={(e) => {
-                          // Prevent input from losing focus when clicking inside the dropdown
-                          e.preventDefault();
-                        }}
+                  if (isCondOnly) {
+                    const isChecked = variableValues[key] === "true";
+                    return (
+                      <div
+                        key={key}
+                        className="flex items-center justify-between p-3.5 rounded-lg border border-border/40 bg-background/30 backdrop-blur-sm shadow-sm transition-all hover:border-violet-500/10"
                       >
-                        <div className="text-[10px] font-bold text-muted-foreground px-2 py-1 uppercase tracking-wider border-b border-border/30 mb-1 flex justify-between">
-                          <span>Suggestions</span>
-                          <span>{(autocompleteSuggestions[key] || []).filter(s => s.enabled).length} actives</span>
-                        </div>
-                        {(autocompleteSuggestions[key] || []).map((suggestion) => (
-                          <div
-                            key={suggestion.id}
-                            className={`flex items-center justify-between rounded-md px-2.5 py-1.5 transition-all text-xs ${
-                              suggestion.enabled
-                                ? "hover:bg-violet-600/10 text-foreground"
-                                : "text-muted-foreground/45 opacity-60"
-                            }`}
+                        <div className="flex flex-col gap-0.5">
+                          <label
+                            className="text-xs font-bold text-foreground capitalize cursor-pointer"
+                            htmlFor={`var-${key}`}
                           >
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (suggestion.enabled) {
-                                  setVariableValues((prev) => ({
-                                    ...prev,
-                                    [key]: suggestion.value,
-                                  }));
-                                  setFocusedVarKey(null);
-                                }
-                              }}
-                              className={`flex-1 text-left truncate mr-2 font-medium ${
-                                suggestion.enabled ? "cursor-pointer" : "cursor-not-allowed"
+                            {key}
+                          </label>
+                          <span className="text-[10px] text-muted-foreground/60 leading-none">Condition d'inclusion de bloc</span>
+                        </div>
+                        <button
+                          type="button"
+                          id={`var-${key}`}
+                          role="switch"
+                          aria-checked={isChecked}
+                          onClick={() =>
+                            setVariableValues((prev) => ({
+                              ...prev,
+                              [key]: prev[key] === "true" ? "" : "true",
+                            }))
+                          }
+                          className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                            isChecked ? "bg-violet-600 shadow-sm shadow-violet-500/25" : "bg-muted"
+                          }`}
+                        >
+                          <span
+                            className={`pointer-events-none inline-block size-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+                              isChecked ? "translate-x-4" : "translate-x-0"
+                            }`}
+                          />
+                        </button>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div key={key} className="flex flex-col gap-1.5 relative">
+                      <label
+                        className="text-xs font-semibold text-muted-foreground/80 capitalize"
+                        htmlFor={`var-${key}`}
+                      >
+                        {key}
+                      </label>
+                      <input
+                        id={`var-${key}`}
+                        type="text"
+                        value={variableValues[key] || ""}
+                        onChange={(e) =>
+                          setVariableValues((prev) => ({
+                            ...prev,
+                            [key]: e.target.value,
+                          }))
+                        }
+                        onFocus={() => setFocusedVarKey(key)}
+                        onBlur={() => {
+                          // Delay closing the dropdown slightly so clicks on options register first
+                          setTimeout(() => {
+                            setFocusedVarKey((current) => current === key ? null : current);
+                          }, 200);
+                        }}
+                        placeholder={`Saisir la valeur pour ${key}...`}
+                        className="w-full rounded-lg border border-border/50 bg-background/50 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/50 focus:border-violet-500 focus:outline-none"
+                      />
+
+                      {/* Suggestions Dropdown */}
+                      {focusedVarKey === key && (autocompleteSuggestions[key] || []).length > 0 && (
+                        <div 
+                          className="absolute left-0 right-0 top-full mt-1 z-40 max-h-48 overflow-y-auto rounded-lg border border-border/60 bg-card p-1.5 shadow-xl space-y-1 animate-in fade-in slide-in-from-top-1 duration-150"
+                          onMouseDown={(e) => {
+                            // Prevent input from losing focus when clicking inside the dropdown
+                            e.preventDefault();
+                          }}
+                        >
+                          <div className="text-[10px] font-bold text-muted-foreground px-2 py-1 uppercase tracking-wider border-b border-border/30 mb-1 flex justify-between">
+                            <span>Suggestions</span>
+                            <span>{(autocompleteSuggestions[key] || []).filter(s => s.enabled).length} actives</span>
+                          </div>
+                          {(autocompleteSuggestions[key] || []).map((suggestion) => (
+                            <div
+                              key={suggestion.id}
+                              className={`flex items-center justify-between rounded-md px-2.5 py-1.5 transition-all text-xs ${
+                                suggestion.enabled
+                                  ? "hover:bg-violet-600/10 text-foreground"
+                                  : "text-muted-foreground/45 opacity-60"
                               }`}
                             >
-                              {suggestion.value}
-                            </button>
-                            
-                            <div className="flex items-center gap-1.5 shrink-0">
-                              {/* Toggle Active/Inactive */}
                               <button
                                 type="button"
-                                onClick={() => toggleAutocompleteSuggestion(key, suggestion.id)}
-                                className={`p-1 rounded transition-colors cursor-pointer ${
-                                  suggestion.enabled 
-                                    ? "hover:bg-violet-500/20 text-violet-400" 
-                                    : "hover:bg-muted text-muted-foreground/40 hover:text-muted-foreground"
+                                onClick={() => {
+                                  if (suggestion.enabled) {
+                                    setVariableValues((prev) => ({
+                                      ...prev,
+                                      [key]: suggestion.value,
+                                    }));
+                                    setFocusedVarKey(null);
+                                  }
+                                }}
+                                className={`flex-1 text-left truncate mr-2 font-medium ${
+                                  suggestion.enabled ? "cursor-pointer" : "cursor-not-allowed"
                                 }`}
-                                title={suggestion.enabled ? "Désactiver la suggestion" : "Activer la suggestion"}
                               >
-                                {suggestion.enabled ? (
-                                  <Eye className="size-3.5" />
-                                ) : (
-                                  <EyeOff className="size-3.5" />
-                                )}
+                                {suggestion.value}
                               </button>
                               
-                              {/* Delete */}
-                              <button
-                                type="button"
-                                onClick={() => deleteAutocompleteSuggestion(key, suggestion.id)}
-                                className="p-1 rounded hover:bg-rose-500/15 text-muted-foreground/50 hover:text-rose-400 transition-colors cursor-pointer"
-                                title="Supprimer la suggestion"
-                              >
-                                <X className="size-3.5" />
-                              </button>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                {/* Toggle Active/Inactive */}
+                                <button
+                                  type="button"
+                                  onClick={() => toggleAutocompleteSuggestion(key, suggestion.id)}
+                                  className={`p-1 rounded transition-colors cursor-pointer ${
+                                    suggestion.enabled 
+                                      ? "hover:bg-violet-500/20 text-violet-400" 
+                                      : "hover:bg-muted text-muted-foreground/40 hover:text-muted-foreground"
+                                  }`}
+                                  title={suggestion.enabled ? "Désactiver la suggestion" : "Activer la suggestion"}
+                                >
+                                  {suggestion.enabled ? (
+                                    <Eye className="size-3.5" />
+                                  ) : (
+                                    <EyeOff className="size-3.5" />
+                                  )}
+                                </button>
+                                
+                                {/* Delete */}
+                                <button
+                                  type="button"
+                                  onClick={() => deleteAutocompleteSuggestion(key, suggestion.id)}
+                                  className="p-1 rounded hover:bg-rose-500/15 text-muted-foreground/50 hover:text-rose-400 transition-colors cursor-pointer"
+                                  title="Supprimer la suggestion"
+                                >
+                                  <X className="size-3.5" />
+                                </button>
+                              </div>
                             </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -888,6 +933,28 @@ function TemplatesContent() {
                 <label className="text-xs font-semibold text-muted-foreground" htmlFor="temp-content">
                   Modèle de prompt initial
                 </label>
+                
+                {/* Toolbar */}
+                <div className="flex flex-wrap gap-2 items-center p-1.5 rounded-lg border border-border/40 bg-background/50 mb-1.5">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-2">Assistant prompt :</span>
+                  <button
+                    type="button"
+                    onClick={() => handleSelectionToVariable("temp-content", newTemplateContent, setNewTemplateContent, false)}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-violet-600/10 hover:bg-violet-600/20 text-violet-400 font-semibold text-[11px] transition-colors cursor-pointer border border-violet-500/10"
+                  >
+                    <Sparkles className="size-3" />
+                    🪄 Rendre variable
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSelectionToVariable("temp-content", newTemplateContent, setNewTemplateContent, true)}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-pink-600/10 hover:bg-pink-600/20 text-pink-400 font-semibold text-[11px] transition-colors cursor-pointer border border-pink-500/10"
+                  >
+                    <Bookmark className="size-3" />
+                    ❓ Rendre conditionnel
+                  </button>
+                </div>
+
                 <textarea
                   id="temp-content"
                   required
