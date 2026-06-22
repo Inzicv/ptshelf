@@ -83,11 +83,13 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
     return {};
   });
   
+  const DEFAULT_CLIENT_ID = "1040854497672-46v4f7d4g7e1b5b.apps.googleusercontent.com"; // Placeholder client ID default for localhost:3000
+
   const [googleClientId, setGoogleClientIdState] = useState<string>(() => {
     if (typeof window !== "undefined") {
-      return localStorage.getItem("ptshelf_google_client_id") || "";
+      return localStorage.getItem("ptshelf_google_client_id") || DEFAULT_CLIENT_ID;
     }
-    return "";
+    return DEFAULT_CLIENT_ID;
   });
 
   const [googleAccessToken, setGoogleAccessTokenState] = useState<string | null>(() => {
@@ -445,9 +447,14 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
   }, [googleAccessToken, autoSync, triggerSyncPull]);
 
   const setGoogleClientId = (id: string) => {
-    setGoogleClientIdState(id);
+    const cleanId = id.trim();
+    setGoogleClientIdState(cleanId || DEFAULT_CLIENT_ID);
     if (typeof window !== "undefined") {
-      localStorage.setItem("ptshelf_google_client_id", id);
+      if (cleanId) {
+        localStorage.setItem("ptshelf_google_client_id", cleanId);
+      } else {
+        localStorage.removeItem("ptshelf_google_client_id");
+      }
     }
   };
 
