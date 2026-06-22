@@ -318,8 +318,30 @@ function TemplatePlayground({
             Modèle de prompt (Template)
           </label>
           {isEditing ? (
-            <div className="space-y-1">
+            <div className="space-y-2">
+              {/* Toolbar */}
+              <div className="flex flex-wrap gap-2 items-center p-1.5 rounded-lg border border-border/40 bg-background/50">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-2">Assistant prompt :</span>
+                <button
+                  type="button"
+                  onClick={() => handleSelectionToVariable("edit-template-content", content, setContent, false)}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-violet-600/10 hover:bg-violet-600/20 text-violet-400 font-semibold text-[11px] transition-colors cursor-pointer border border-violet-500/10"
+                >
+                  <Sparkles className="size-3" />
+                  🪄 Rendre variable
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSelectionToVariable("edit-template-content", content, setContent, true)}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-pink-600/10 hover:bg-pink-600/20 text-pink-400 font-semibold text-[11px] transition-colors cursor-pointer border border-pink-500/10"
+                >
+                  <Bookmark className="size-3" />
+                  ❓ Rendre conditionnel
+                </button>
+              </div>
+
               <textarea
+                id="edit-template-content"
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 rows={5}
