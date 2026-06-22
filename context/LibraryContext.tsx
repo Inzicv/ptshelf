@@ -231,11 +231,20 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
       setSyncError("Connectez-vous d'abord à votre compte Google.");
       return false;
     }
+    if (!googleAccessToken) {
+      setSyncStatus("error");
+      setSyncError("Jeton d'accès Google manquant. Veuillez vous reconnecter.");
+      return false;
+    }
     setSyncStatus("syncing");
     setSyncError(null);
 
     try {
-      const response = await fetch(`/api/sync?email=${encodeURIComponent(googleUser.email)}`);
+      const response = await fetch(`/api/sync?email=${encodeURIComponent(googleUser.email)}`, {
+        headers: {
+          Authorization: `Bearer ${googleAccessToken}`,
+        },
+      });
 
       if (!response.ok) {
         let serverError = "";
@@ -243,6 +252,12 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
           const errBody = await response.json();
           serverError = errBody.error || "";
         } catch (_) {}
+
+        if (response.status === 401) {
+          handleTokenExpiration();
+          throw new Error(serverError || "Votre session Google a expiré. Veuillez vous reconnecter.");
+        }
+
         throw new Error(serverError || `Erreur lors du chargement (HTTP ${response.status})`);
       }
 
@@ -270,7 +285,7 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
       setSyncError(e instanceof Error ? e.message : "Erreur de téléchargement");
       return false;
     }
-  }, [googleUser]);
+  }, [googleUser, googleAccessToken, handleTokenExpiration]);
 
   const triggerSyncPush = useCallback(async (overrideState?: {
     folders?: Folder[];
@@ -281,6 +296,11 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
     if (!googleUser || !googleUser.email) {
       setSyncStatus("error");
       setSyncError("Connectez-vous d'abord à votre compte Google.");
+      return false;
+    }
+    if (!googleAccessToken) {
+      setSyncStatus("error");
+      setSyncError("Jeton d'accès Google manquant. Veuillez vous reconnecter.");
       return false;
     }
     setSyncStatus("syncing");
@@ -298,6 +318,7 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${googleAccessToken}`,
         },
         body: JSON.stringify({
           email: googleUser.email,
@@ -311,6 +332,12 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
           const errBody = await response.json();
           serverError = errBody.error || "";
         } catch (_) {}
+
+        if (response.status === 401) {
+          handleTokenExpiration();
+          throw new Error(serverError || "Votre session Google a expiré. Veuillez vous reconnecter.");
+        }
+
         throw new Error(serverError || `Erreur lors de la sauvegarde (HTTP ${response.status})`);
       }
 
@@ -332,7 +359,7 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
       setSyncError(e instanceof Error ? e.message : "Erreur de sauvegarde");
       return false;
     }
-  }, [googleUser, folders, templates, presets, autocompleteSuggestions]);
+  }, [googleUser, googleAccessToken, handleTokenExpiration, folders, templates, presets, autocompleteSuggestions]);
 
   // Save to localStorage when state changes
   useEffect(() => {
