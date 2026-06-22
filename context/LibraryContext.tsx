@@ -240,11 +240,7 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
     setSyncError(null);
 
     try {
-      const response = await fetch(`/api/sync?email=${encodeURIComponent(googleUser.email)}`, {
-        headers: {
-          Authorization: `Bearer ${googleAccessToken}`,
-        },
-      });
+      const response = await fetch(`/api/sync?email=${encodeURIComponent(googleUser.email)}`);
 
       if (!response.ok) {
         let serverError = "";
@@ -319,7 +315,6 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${googleAccessToken}`,
         },
         body: JSON.stringify({
           email: googleUser.email,
