@@ -4,7 +4,6 @@ import React from "react";
 import Link from "next/link";
 import { useLibrary } from "@/context/LibraryContext";
 import {
-  FolderKanban,
   Shapes,
   Library,
   Settings,
@@ -15,16 +14,9 @@ import {
 } from "lucide-react";
 
 export default function DashboardPage() {
-  const { projects, folders, templates, presets, syncUrl, syncStatus, lastSyncedAt } = useLibrary();
+  const { folders, templates, presets, syncUrl, syncStatus, lastSyncedAt } = useLibrary();
 
   const stats = [
-    {
-      label: "Projets",
-      value: projects.length,
-      icon: FolderKanban,
-      color: "text-violet-400 border-violet-500/20 bg-violet-500/5",
-      href: "/projects",
-    },
     {
       label: "Templates",
       value: templates.length,
@@ -68,7 +60,7 @@ export default function DashboardPage() {
                 Sauvegardez vos données sur Google Drive
               </h3>
               <p className="mt-1 text-xs text-muted-foreground max-w-xl leading-relaxed">
-                Vos projets et templates sont actuellement stockés uniquement dans le navigateur. Liez votre compte Google Drive en quelques minutes pour ne jamais perdre vos données.
+                Vos dossiers et templates sont actuellement stockés uniquement dans le navigateur. Liez votre compte Google Drive en quelques minutes pour ne jamais perdre vos données.
               </p>
             </div>
             <Link
@@ -81,7 +73,7 @@ export default function DashboardPage() {
         )}
 
         {/* Stats Grid */}
-        <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
           {stats.map((stat) => (
             <Link
               key={stat.label}
@@ -107,13 +99,6 @@ export default function DashboardPage() {
               Actions Rapides
             </h2>
             <div className="flex flex-col gap-3">
-              <Link
-                href="/projects"
-                className="flex items-center gap-3 rounded-lg border border-border/50 bg-background/50 hover:bg-muted p-3 text-xs font-semibold text-foreground transition-all hover:border-violet-500/20"
-              >
-                <PlusCircle className="size-4 text-violet-400" />
-                Nouveau Projet
-              </Link>
               <Link
                 href="/templates"
                 className="flex items-center gap-3 rounded-lg border border-border/50 bg-background/50 hover:bg-muted p-3 text-xs font-semibold text-foreground transition-all hover:border-fuchsia-400/20"

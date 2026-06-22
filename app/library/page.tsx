@@ -8,7 +8,7 @@ import Link from "next/link";
 export default function LibraryPage() {
   const {
     folders,
-    projects,
+    templates,
     addFolder,
     updateFolder,
     deleteFolder,
@@ -70,7 +70,7 @@ export default function LibraryPage() {
           <div className="flex flex-col items-center justify-center p-12 text-center border border-dashed rounded-xl border-border bg-card/10">
             <Library className="size-10 text-muted-foreground/50 mb-3" />
             <p className="text-xs text-muted-foreground font-medium">Aucun dossier créé</p>
-            <p className="text-[11px] text-muted-foreground/60 mt-1">Créez des dossiers pour regrouper et organiser vos projets.</p>
+            <p className="text-[11px] text-muted-foreground/60 mt-1">Créez des dossiers pour regrouper et organiser vos templates.</p>
             <button
               onClick={openCreateModal}
               className="mt-4 rounded-lg bg-violet-600 hover:bg-violet-500 text-white font-medium text-xs px-4 py-2 transition-colors cursor-pointer shadow-md shadow-violet-500/10"
@@ -81,8 +81,8 @@ export default function LibraryPage() {
         ) : (
           <div className="grid gap-6 sm:grid-cols-2">
             {folders.map((folder) => {
-              // Find projects belonging to this folder
-              const folderProjects = projects.filter((p) => p.folderId === folder.id);
+              // Find templates belonging to this folder
+              const folderTemplates = templates.filter((t) => t.folderId === folder.id);
 
               return (
                 <div
@@ -105,7 +105,7 @@ export default function LibraryPage() {
                       </button>
                       <button
                         onClick={() => {
-                          if (confirm("Supprimer ce dossier ? Les projets associés seront retirés du dossier mais pas supprimés.")) {
+                          if (confirm("Supprimer ce dossier ? Les templates associés seront retirés du dossier mais pas supprimés.")) {
                             deleteFolder(folder.id);
                           }
                         }}
@@ -119,28 +119,28 @@ export default function LibraryPage() {
 
                   <div className="flex-1 space-y-2">
                     <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                      Projets ({folderProjects.length})
+                      Templates ({folderTemplates.length})
                     </span>
 
-                    {folderProjects.length === 0 ? (
+                    {folderTemplates.length === 0 ? (
                       <p className="text-xs text-muted-foreground/60 italic py-1">
-                        Aucun projet dans ce dossier.
+                        Aucun template dans ce dossier.
                       </p>
                     ) : (
                       <div className="space-y-1.5">
-                        {folderProjects.map((project) => (
+                        {folderTemplates.map((temp) => (
                           <div
-                            key={project.id}
+                            key={temp.id}
                             className="flex items-center justify-between p-2 rounded-lg bg-background/50 border border-border/35 text-xs"
                           >
                             <span className="font-medium text-foreground truncate max-w-[200px]">
-                              {project.name}
+                              {temp.name}
                             </span>
                             <Link
-                              href="/projects"
+                              href={`/templates?id=${temp.id}`}
                               className="text-[10px] font-bold text-violet-400 hover:text-violet-300 flex items-center gap-0.5 hover:underline"
                             >
-                              Gérer
+                              Éditer
                               <ChevronRight className="size-3" />
                             </Link>
                           </div>

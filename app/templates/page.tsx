@@ -114,9 +114,7 @@ function TemplatePlayground({
     setTimeout(() => setCopiedPrompt(false), 2000);
   };
 
-  const currentPresets = activeProjectId
-    ? presets.filter((p) => p.templateId === template.id && p.projectId === activeProjectId)
-    : [];
+  const currentPresets = presets.filter((p) => p.templateId === template.id);
 
   const handleApplyPreset = (preset: Preset) => {
     const updatedValues: Record<string, string> = {};
@@ -128,8 +126,8 @@ function TemplatePlayground({
 
   const handleSavePreset = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPresetName.trim() || !activeProjectId) return;
-    addPreset(newPresetName, template.id, activeProjectId, { ...variableValues });
+    if (!newPresetName.trim()) return;
+    addPreset(newPresetName, template.id, { ...variableValues });
 
     // Save variable values to autocomplete suggestions
     Object.entries(variableValues).forEach(([key, value]) => {
@@ -141,6 +139,7 @@ function TemplatePlayground({
     setNewPresetName("");
     setIsSavingPreset(false);
   };
+
 
 
   return (
@@ -397,7 +396,7 @@ function TemplatePlayground({
                 <Bookmark className="size-4 text-pink-400" />
                 Presets
               </h3>
-              {template.variableIds.length > 0 && activeProjectId && (
+              {template.variableIds.length > 0 && (
                 <button
                   onClick={() => setIsSavingPreset(true)}
                   className="text-xs font-bold text-pink-400 hover:text-pink-300 transition-colors flex items-center gap-1 cursor-pointer"
@@ -408,7 +407,7 @@ function TemplatePlayground({
               )}
             </div>
 
-            {isSavingPreset && activeProjectId && (
+            {isSavingPreset && (
               <form
                 onSubmit={handleSavePreset}
                 className="flex items-end gap-2 p-3.5 rounded-lg border border-pink-500/20 bg-pink-500/5 animate-in slide-in-from-top duration-200"
@@ -447,13 +446,9 @@ function TemplatePlayground({
               </form>
             )}
 
-            {!activeProjectId ? (
+            {currentPresets.length === 0 ? (
               <p className="text-xs text-muted-foreground/75 leading-relaxed py-1">
-                {"Veuillez sélectionner un projet dans la barre latérale pour charger ou créer des presets."}
-              </p>
-            ) : currentPresets.length === 0 ? (
-              <p className="text-xs text-muted-foreground/75 leading-relaxed py-1">
-                {"Aucun preset enregistré pour ce template dans ce projet. Saisissez des valeurs dans le formulaire et enregistrez-les en preset."}
+                {"Aucun preset enregistré pour ce template. Saisissez des valeurs dans le formulaire et enregistrez-les en preset."}
               </p>
             ) : (
               <div className="flex flex-wrap gap-2 pt-1">

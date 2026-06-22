@@ -2,16 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FolderKanban, LayoutDashboard, Library, Settings2, Shapes } from "lucide-react";
+import { LayoutDashboard, Library, Settings2, Shapes } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
 const navigation = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
-  { label: "Projets", href: "/projects", icon: FolderKanban },
   { label: "Templates", href: "/templates", icon: Shapes },
   { label: "Bibliothèque", href: "/library", icon: Library },
 ];
+
 
 export function Sidebar() {
   const pathname = usePathname();
