@@ -27,10 +27,9 @@ import {
 interface PlaygroundProps {
   template: Template;
   presets: Preset[];
-  activeProjectId: string | null;
   updateTemplate: (id: string, updates: Partial<Omit<Template, "id" | "createdAt" | "updatedAt">>) => void;
   deleteTemplate: (id: string) => void;
-  addPreset: (name: string, templateId: string, projectId: string, values: Record<string, string | number | boolean>) => void;
+  addPreset: (name: string, templateId: string, values: Record<string, string | number | boolean>) => void;
   deletePreset: (id: string) => void;
   autocompleteSuggestions: Record<string, AutocompleteSuggestion[]>;
   addAutocompleteSuggestion: (varKey: string, value: string) => void;
@@ -41,7 +40,6 @@ interface PlaygroundProps {
 function TemplatePlayground({
   template,
   presets,
-  activeProjectId,
   updateTemplate,
   deleteTemplate,
   addPreset,
