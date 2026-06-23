@@ -49,19 +49,66 @@ interface LibraryContextType extends LibraryState {
 
 const LibraryContext = createContext<LibraryContextType | undefined>(undefined);
 
+const DEFAULT_FOLDERS: Folder[] = [
+  { id: "fold-chatgpt", name: "ChatGPT", createdAt: "2026-06-23T08:00:00Z", updatedAt: "2026-06-23T08:00:00Z" },
+  { id: "fold-suno", name: "Suno", createdAt: "2026-06-23T08:00:00Z", updatedAt: "2026-06-23T08:00:00Z" },
+  { id: "fold-midjourney", name: "Midjourney", createdAt: "2026-06-23T08:00:00Z", updatedAt: "2026-06-23T08:00:00Z" },
+];
+
+const DEFAULT_TEMPLATES: Template[] = [
+  {
+    id: "temp-email",
+    name: "Rédacteur d'e-mails professionnels",
+    description: "Génère des e-mails formels et percutants pour les clients.",
+    content: "Bonjour [destinataire],\n\nJe vous écris concernant [sujet]. [?details]Pour rappel, [details].[/?details]\n\nCordialement,\n[signature]",
+    variableIds: ["destinataire", "sujet", "details", "signature"],
+    folderId: "fold-chatgpt",
+    createdAt: "2026-06-23T08:00:00Z",
+    updatedAt: "2026-06-23T08:00:00Z",
+  },
+  {
+    id: "temp-lyrics",
+    name: "Générateur de paroles de chansons",
+    description: "Crée des paroles structurées avec couplets et refrains pour Suno AI.",
+    content: "[Genre: [genre]]\n[Style: [style]]\n\n[Couplet 1]\n[paroles_couplet_1]\n\n[Refrain]\n[paroles_refrain]\n\n[?pont]\n[Pont]\n[paroles_pont]\n[/?pont]",
+    variableIds: ["genre", "style", "paroles_couplet_1", "paroles_refrain", "pont", "paroles_pont"],
+    folderId: "fold-suno",
+    createdAt: "2026-06-23T08:00:00Z",
+    updatedAt: "2026-06-23T08:00:00Z",
+  },
+  {
+    id: "temp-midjourney",
+    name: "Prompt de photoréalisme",
+    description: "Crée des prompts d'images photoréalistes ultra-détaillés.",
+    content: "A professional [style] photography of a [sujet], shot on [appareil] lens, lighting: [eclairage], [?aspect_ratio]--ar [aspect_ratio][/?aspect_ratio] --v 6.0",
+    variableIds: ["style", "sujet", "appareil", "eclairage", "aspect_ratio"],
+    folderId: "fold-midjourney",
+    createdAt: "2026-06-23T08:00:00Z",
+    updatedAt: "2026-06-23T08:00:00Z",
+  },
+];
+
 export function LibraryProvider({ children }: { children: React.ReactNode }) {
   const [folders, setFolders] = useState<Folder[]>(() => {
     if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("ptshelf_folders");
-      return stored ? JSON.parse(stored) : [];
+      const storedFolders = localStorage.getItem("ptshelf_folders");
+      const storedTemplates = localStorage.getItem("ptshelf_templates");
+      if (!storedFolders && !storedTemplates) {
+        return DEFAULT_FOLDERS;
+      }
+      return storedFolders ? JSON.parse(storedFolders) : [];
     }
     return [];
   });
 
   const [templates, setTemplates] = useState<Template[]>(() => {
     if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("ptshelf_templates");
-      return stored ? JSON.parse(stored) : [];
+      const storedFolders = localStorage.getItem("ptshelf_folders");
+      const storedTemplates = localStorage.getItem("ptshelf_templates");
+      if (!storedFolders && !storedTemplates) {
+        return DEFAULT_TEMPLATES;
+      }
+      return storedTemplates ? JSON.parse(storedTemplates) : [];
     }
     return [];
   });

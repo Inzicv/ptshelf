@@ -170,17 +170,6 @@ Automatic adaptation to any screen size.
 Similar UX to ChatGPT, Notion and Cursor.
 
 # V4
-Objectif :
-
-Expérience premium.
-
-Fonctionnalités :
-
-* variables conditionnelles
-* proposition d'autocompletion des valeurs de variables dans le template avec des valeur deja tapées
-* gestion des proposition d'autocompletion (activer / desactiver / supprimer un choix avec une croix)
-
-# V5
 * La bibliothèque doit montrer tous les templates avec leur nom et une description
 * on doit pouvoir ajouter les templates dans un dossier en le modifiant ou par glissé déposé
 * on doit pouvoir faire des sous dossiers dans les dossiers initiaux
@@ -201,3 +190,13 @@ Fonctionnalités :
 * refonte du formulaire pour avoir le chat à gauche et le résultat à droite
 * possibiliter de choisir l'ia a utiliser
 * 
+# V8
+Objectif :
+
+Expérience premium.
+
+Fonctionnalités :
+
+* variables conditionnelles
+* proposition d'autocompletion des valeurs de variables dans le template avec des valeurs deja tapées
+* gestion des propositions d'autocompletion (activer / desactiver / supprimer un choix avec une croix)

@@ -116,10 +116,12 @@ function TemplatePlayground({
   toggleAutocompleteSuggestion,
   deleteAutocompleteSuggestion,
 }: PlaygroundProps) {
+  const { folders } = useLibrary();
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(template.name);
   const [description, setDescription] = useState(template.description || "");
   const [content, setContent] = useState(template.content);
+  const [folderId, setFolderId] = useState(template.folderId || "");
 
   // Track focused variable key for suggestions dropdown
   const [focusedVarKey, setFocusedVarKey] = useState<string | null>(null);
@@ -144,6 +146,7 @@ function TemplatePlayground({
       name,
       description: description || undefined,
       content,
+      folderId: folderId || undefined,
     });
     setIsEditing(false);
   };
@@ -250,13 +253,30 @@ function TemplatePlayground({
             )}
 
             {isEditing ? (
-              <input
-                type="text"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Ajouter une description..."
-                className="text-xs text-muted-foreground bg-background border border-border/60 rounded-lg px-2.5 py-1 w-full focus:border-violet-500 focus:outline-none"
-              />
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Ajouter une description..."
+                  className="text-xs text-muted-foreground bg-background border border-border/60 rounded-lg px-2.5 py-1 w-full focus:border-violet-500 focus:outline-none"
+                />
+                <div className="flex flex-col gap-1 w-full max-w-xs">
+                  <label className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">Dossier</label>
+                  <select
+                    value={folderId}
+                    onChange={(e) => setFolderId(e.target.value)}
+                    className="w-full text-xs text-foreground bg-background border border-border/50 rounded-lg px-2.5 py-1.5 focus:border-violet-500 focus:outline-none cursor-pointer"
+                  >
+                    <option value="">-- Aucun dossier --</option>
+                    {folders.map((f) => (
+                      <option key={f.id} value={f.id}>
+                        {f.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
             ) : (
               <p className="text-xs text-muted-foreground">
                 {template.description || "Aucune description."}
@@ -279,6 +299,7 @@ function TemplatePlayground({
                     setName(template.name);
                     setDescription(template.description || "");
                     setContent(template.content);
+                    setFolderId(template.folderId || "");
                     setIsEditing(false);
                   }}
                   className="rounded-lg border border-border bg-background hover:bg-muted text-foreground font-medium text-xs px-3.5 py-2 transition-colors cursor-pointer"
