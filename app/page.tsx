@@ -11,6 +11,7 @@ import {
   Cloud,
   ChevronRight,
   TrendingUp,
+  Wand2,
 } from "lucide-react";
 
 export default function DashboardPage() {
@@ -100,11 +101,11 @@ export default function DashboardPage() {
             </h2>
             <div className="flex flex-col gap-3">
               <Link
-                href="/templates"
-                className="flex items-center gap-3 rounded-lg border border-border/50 bg-background/50 hover:bg-muted p-3 text-xs font-semibold text-foreground transition-all hover:border-fuchsia-400/20"
+                href="/creator"
+                className="flex items-center gap-3 rounded-lg border border-border/50 bg-background/50 hover:bg-muted p-3 text-xs font-semibold text-foreground transition-all hover:border-violet-400/20"
               >
-                <PlusCircle className="size-4 text-fuchsia-400" />
-                Nouveau Template
+                <Wand2 className="size-4 text-violet-400" />
+                Créateur de Template
               </Link>
               <Link
                 href="/settings"
