@@ -1,21 +1,36 @@
 "use client";
 
 import Link from "next/link";
-import { Layers3, CloudOff, RefreshCw, CheckCircle2, AlertCircle } from "lucide-react";
+import { Layers3, CloudOff, RefreshCw, CheckCircle2, AlertCircle, Menu } from "lucide-react";
 import { useLibrary } from "@/context/LibraryContext";
 
-export function Header() {
+interface HeaderProps {
+  onMenuToggle?: () => void;
+}
+
+export function Header({ onMenuToggle }: HeaderProps) {
   const { googleAccessToken, syncStatus, lastSyncedAt } = useLibrary();
 
   return (
-    <header className="sticky top-0 z-30 h-14 border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-      <div className="mx-auto flex h-full max-w-[1600px] items-center justify-between px-4 sm:px-6">
-        <Link href="/" className="flex items-center gap-2.5 hover:opacity-90 transition-opacity">
-          <span className="grid size-8 place-items-center rounded-lg bg-violet-600 text-white shadow-[0_0_15px_rgba(139,92,246,0.3)]">
-            <Layers3 className="size-4" aria-hidden="true" />
-          </span>
-          <span className="font-bold tracking-tight bg-gradient-to-r from-white to-neutral-300 bg-clip-text text-transparent">PTShelf</span>
-        </Link>
+    <header className="sticky top-0 z-30 h-14 border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 w-full">
+      <div className="flex h-full items-center justify-between px-4 sm:px-6">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onMenuToggle}
+            className="p-2 -ml-2 text-muted-foreground hover:text-foreground md:hidden cursor-pointer"
+            aria-label="Ouvrir le menu"
+          >
+            <Menu className="size-5" />
+          </button>
+          
+          <Link href="/" className="flex items-center gap-2.5 hover:opacity-90 transition-opacity">
+            <span className="grid size-8 place-items-center rounded-lg bg-violet-600 text-white shadow-[0_0_15px_rgba(139,92,246,0.3)]">
+              <Layers3 className="size-4" aria-hidden="true" />
+            </span>
+            <span className="font-bold tracking-tight bg-gradient-to-r from-white to-neutral-300 bg-clip-text text-transparent">PTShelf</span>
+          </Link>
+        </div>
 
         <div className="flex items-center gap-4">
           {/* Sync Status Badge */}

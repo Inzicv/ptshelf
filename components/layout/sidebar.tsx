@@ -6,7 +6,7 @@ import { LayoutDashboard, Library, Settings2, Shapes } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
-const navigation = [
+export const navigation = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
   { label: "Templates", href: "/templates", icon: Shapes },
   { label: "Bibliothèque", href: "/library", icon: Library },

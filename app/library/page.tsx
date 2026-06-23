@@ -65,7 +65,7 @@ export default function LibraryPage() {
         </button>
       </div>
 
-      <div className="flex-1 p-6 sm:p-8 max-w-5xl space-y-8">
+      <div className="flex-1 p-4 md:p-6 lg:p-8 w-full space-y-8">
         {folders.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-12 text-center border border-dashed rounded-xl border-border bg-card/10">
             <Library className="size-10 text-muted-foreground/50 mb-3" />
@@ -79,7 +79,7 @@ export default function LibraryPage() {
             </button>
           </div>
         ) : (
-          <div className="grid gap-6 sm:grid-cols-2">
+          <div className="grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
             {folders.map((folder) => {
               // Find templates belonging to this folder
               const folderTemplates = templates.filter((t) => t.folderId === folder.id);

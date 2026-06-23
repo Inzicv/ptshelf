@@ -50,7 +50,7 @@ export default function DashboardPage() {
         </h1>
       </div>
 
-      <div className="flex-1 space-y-8 p-6 sm:p-8 max-w-6xl">
+      <div className="flex-1 space-y-8 p-4 md:p-6 lg:p-8 w-full">
         {/* Sync Banner */}
         {!googleAccessToken && (
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 sm:p-6 shadow-sm">
@@ -92,9 +92,9 @@ export default function DashboardPage() {
         </div>
 
         {/* Action and Recent Grid */}
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
           {/* Quick Actions */}
-          <div className="md:col-span-1 rounded-xl border border-border/40 bg-card/20 p-6 backdrop-blur-sm flex flex-col gap-5">
+          <div className="lg:col-span-1 rounded-xl border border-border/40 bg-card/20 p-6 backdrop-blur-sm flex flex-col gap-5">
             <h2 className="text-sm font-bold text-foreground tracking-wide uppercase border-b border-border/30 pb-2">
               Actions Rapides
             </h2>
@@ -147,7 +147,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Recent Templates */}
-          <div className="md:col-span-2 rounded-xl border border-border/40 bg-card/20 p-6 backdrop-blur-sm flex flex-col gap-4">
+          <div className="lg:col-span-2 rounded-xl border border-border/40 bg-card/20 p-6 backdrop-blur-sm flex flex-col gap-4">
             <div className="flex items-center justify-between border-b border-border/30 pb-2">
               <h2 className="text-sm font-bold text-foreground tracking-wide uppercase">
                 Templates Récents

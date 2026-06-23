@@ -230,7 +230,7 @@ function TemplatePlayground({
 
 
   return (
-    <div className="flex-1 p-6 sm:p-8 max-w-5xl space-y-6">
+    <div className="flex-1 p-6 sm:p-8 w-full space-y-6">
       {/* Template Card */}
       <div className="rounded-xl border border-border/40 bg-card/20 p-6 backdrop-blur-sm shadow-md transition-all hover:border-violet-500/10">
         <div className="flex justify-between items-start gap-4">

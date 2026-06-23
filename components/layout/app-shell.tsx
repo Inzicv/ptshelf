@@ -1,10 +1,13 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { Header } from "@/components/layout/header";
-import { Sidebar } from "@/components/layout/sidebar";
+import { Sidebar, navigation } from "@/components/layout/sidebar";
 import { useLibrary } from "@/context/LibraryContext";
-import { Layers3, Cloud, AlertCircle, Loader2 } from "lucide-react";
+import { Layers3, Cloud, AlertCircle, Loader2, X, Settings2 } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { cn } from "@/lib/utils";
+import Link from "next/link";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -12,6 +15,8 @@ interface AppShellProps {
 
 export function AppShell({ children }: AppShellProps) {
   const { googleAccessToken, loginGoogle, syncStatus, syncError } = useLibrary();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const pathname = usePathname();
 
   if (!googleAccessToken) {
     return (
@@ -72,12 +77,75 @@ export function AppShell({ children }: AppShellProps) {
   }
 
   return (
-    <div className="min-h-dvh bg-background">
-      <Header />
-      <div className="mx-auto flex min-h-[calc(100dvh-3.5rem)] max-w-[1600px]">
+    <div className="min-h-dvh bg-background flex flex-col w-full relative">
+      <Header onMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />
+      <div className="flex-1 flex min-h-[calc(100dvh-3.5rem)] w-full min-w-0">
         <Sidebar />
-        <main className="min-w-0 flex-1">{children}</main>
+        <main className="min-w-0 flex-1 overflow-auto">{children}</main>
       </div>
+
+      {/* Mobile Sidebar (Drawer) */}
+      {isMobileMenuOpen && (
+        <div className="fixed inset-0 z-40 md:hidden flex">
+          {/* Backdrop overlay */}
+          <div
+            className="fixed inset-0 bg-background/80 backdrop-blur-sm transition-opacity cursor-pointer"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+          {/* Drawer content */}
+          <div className="relative flex w-full max-w-xs flex-col bg-card border-r border-border/40 p-4 shadow-xl z-50 animate-in slide-in-from-left duration-200">
+            <div className="flex items-center justify-between border-b border-border/30 pb-3 mb-4">
+              <span className="font-bold tracking-tight bg-gradient-to-r from-white to-neutral-300 bg-clip-text text-transparent">Menu</span>
+              <button
+                type="button"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="p-1.5 rounded-md hover:bg-muted text-muted-foreground transition-colors cursor-pointer"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+            
+            {/* Same navigation items */}
+            <nav className="flex-1 space-y-1" aria-label="Navigation mobile">
+              {navigation.map(({ label, href, icon: Icon }) => {
+                const isActive = pathname === href;
+                return (
+                  <Link
+                    key={label}
+                    href={href}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={cn(
+                      "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-all duration-200",
+                      isActive
+                        ? "bg-violet-600/15 text-violet-400 border border-violet-500/25 shadow-[0_0_10px_rgba(139,92,246,0.05)]"
+                        : "text-muted-foreground hover:bg-accent/60 hover:text-foreground border border-transparent",
+                    )}
+                  >
+                    <Icon className="size-4" aria-hidden="true" />
+                    {label}
+                  </Link>
+                );
+              })}
+            </nav>
+            
+            <div className="border-t border-border/30 pt-4 mt-auto">
+              <Link
+                href="/settings"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={cn(
+                  "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-all duration-200",
+                  pathname === "/settings"
+                    ? "bg-violet-600/15 text-violet-400 border border-violet-500/25 shadow-[0_0_10px_rgba(139,92,246,0.05)]"
+                    : "text-muted-foreground hover:bg-accent/60 hover:text-foreground border border-transparent",
+                )}
+              >
+                <Settings2 className="size-4" aria-hidden="true" />
+                Paramètres
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

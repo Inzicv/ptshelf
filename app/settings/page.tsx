@@ -29,8 +29,8 @@ export default function SettingsPage() {
       </div>
 
       {/* Main Settings Panel */}
-      <div className="flex-1 space-y-8 p-6 sm:p-8 max-w-4xl">
-        <div className="grid gap-6 md:grid-cols-2">
+      <div className="flex-1 space-y-8 p-6 sm:p-8 w-full">
+        <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
           {/* Form & Action Box */}
           <div className="flex flex-col gap-6 rounded-xl border border-border/40 bg-card/30 p-6 backdrop-blur-sm shadow-md transition-all hover:border-violet-500/20 hover:shadow-violet-500/5">
             <h2 className="text-lg font-semibold flex items-center gap-2 text-foreground">
