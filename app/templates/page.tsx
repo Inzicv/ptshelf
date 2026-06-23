@@ -35,7 +35,7 @@ const handleSelectionToVariable = (
 
   const start = textarea.selectionStart;
   const end = textarea.selectionEnd;
-  
+
   if (start === end) {
     alert("Veuillez d'abord sélectionner (surligner) du texte dans le champ de saisie.");
     return;
@@ -47,7 +47,7 @@ const handleSelectionToVariable = (
       ? `Entrez le nom de la condition pour le texte sélectionné "${selectedText}" :`
       : `Entrez le nom de la variable pour le texte sélectionné "${selectedText}" :`
   );
-  
+
   if (!varName) return;
   const cleanVarName = varName.trim().replace(/[^a-zA-Z0-9_]/g, "_");
   if (!cleanVarName) {
@@ -57,7 +57,7 @@ const handleSelectionToVariable = (
 
   const before = value.substring(0, start);
   const after = value.substring(end);
-  
+
   let replacement = "";
   if (isConditional) {
     replacement = `[?${cleanVarName}]${selectedText}[/?${cleanVarName}]`;
@@ -80,14 +80,14 @@ const isConditionalOnly = (key: string, content: string): boolean => {
   // Check if it appears as a regular replacement
   const regularCurly = new RegExp(`\\{\\{\\s*${escapedKey}\\s*\\}\\}`, "i");
   const regularBracket = new RegExp(`\\[\\s*${escapedKey}\\s*\\]`, "i");
-  
+
   const hasRegular = regularCurly.test(content) || regularBracket.test(content);
   if (hasRegular) return false;
 
   // Check if it appears as a conditional tag
   const condCurly = new RegExp(`\\{\\{\\?\\s*${escapedKey}\\s*\\}\\}`, "i");
   const condBracket = new RegExp(`\\[\\?\\s*${escapedKey}\\s*\\]`, "i");
-  
+
   return condCurly.test(content) || condBracket.test(content);
 };
 
@@ -132,7 +132,7 @@ function TemplatePlayground({
     });
     return initialValues;
   });
-  
+
   // Preset state
   const [newPresetName, setNewPresetName] = useState("");
   const [isSavingPreset, setIsSavingPreset] = useState(false);
@@ -420,14 +420,12 @@ function TemplatePlayground({
                               [key]: prev[key] === "true" ? "" : "true",
                             }))
                           }
-                          className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                            isChecked ? "bg-violet-600 shadow-sm shadow-violet-500/25" : "bg-muted"
-                          }`}
+                          className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${isChecked ? "bg-violet-600 shadow-sm shadow-violet-500/25" : "bg-muted"
+                            }`}
                         >
                           <span
-                            className={`pointer-events-none inline-block size-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
-                              isChecked ? "translate-x-4" : "translate-x-0"
-                            }`}
+                            className={`pointer-events-none inline-block size-4 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${isChecked ? "translate-x-4" : "translate-x-0"
+                              }`}
                           />
                         </button>
                       </div>
@@ -465,7 +463,7 @@ function TemplatePlayground({
 
                       {/* Suggestions Dropdown */}
                       {focusedVarKey === key && (autocompleteSuggestions[key] || []).length > 0 && (
-                        <div 
+                        <div
                           className="absolute left-0 right-0 top-full mt-1 z-40 max-h-48 overflow-y-auto rounded-lg border border-border/60 bg-card p-1.5 shadow-xl space-y-1 animate-in fade-in slide-in-from-top-1 duration-150"
                           onMouseDown={(e) => {
                             // Prevent input from losing focus when clicking inside the dropdown
@@ -479,11 +477,10 @@ function TemplatePlayground({
                           {(autocompleteSuggestions[key] || []).map((suggestion) => (
                             <div
                               key={suggestion.id}
-                              className={`flex items-center justify-between rounded-md px-2.5 py-1.5 transition-all text-xs ${
-                                suggestion.enabled
+                              className={`flex items-center justify-between rounded-md px-2.5 py-1.5 transition-all text-xs ${suggestion.enabled
                                   ? "hover:bg-violet-600/10 text-foreground"
                                   : "text-muted-foreground/45 opacity-60"
-                              }`}
+                                }`}
                             >
                               <button
                                 type="button"
@@ -496,23 +493,21 @@ function TemplatePlayground({
                                     setFocusedVarKey(null);
                                   }
                                 }}
-                                className={`flex-1 text-left truncate mr-2 font-medium ${
-                                  suggestion.enabled ? "cursor-pointer" : "cursor-not-allowed"
-                                }`}
+                                className={`flex-1 text-left truncate mr-2 font-medium ${suggestion.enabled ? "cursor-pointer" : "cursor-not-allowed"
+                                  }`}
                               >
                                 {suggestion.value}
                               </button>
-                              
+
                               <div className="flex items-center gap-1.5 shrink-0">
                                 {/* Toggle Active/Inactive */}
                                 <button
                                   type="button"
                                   onClick={() => toggleAutocompleteSuggestion(key, suggestion.id)}
-                                  className={`p-1 rounded transition-colors cursor-pointer ${
-                                    suggestion.enabled 
-                                      ? "hover:bg-violet-500/20 text-violet-400" 
+                                  className={`p-1 rounded transition-colors cursor-pointer ${suggestion.enabled
+                                      ? "hover:bg-violet-500/20 text-violet-400"
                                       : "hover:bg-muted text-muted-foreground/40 hover:text-muted-foreground"
-                                  }`}
+                                    }`}
                                   title={suggestion.enabled ? "Désactiver la suggestion" : "Activer la suggestion"}
                                 >
                                   {suggestion.enabled ? (
@@ -521,7 +516,7 @@ function TemplatePlayground({
                                     <EyeOff className="size-3.5" />
                                   )}
                                 </button>
-                                
+
                                 {/* Delete */}
                                 <button
                                   type="button"
@@ -809,11 +804,10 @@ function TemplatesContent() {
                 onClick={() => {
                   router.push(`/templates?id=${t.id}`);
                 }}
-                className={`w-full text-left p-3 rounded-lg border transition-all text-xs flex flex-col gap-1 cursor-pointer ${
-                  templateIdParam === t.id
+                className={`w-full text-left p-3 rounded-lg border transition-all text-xs flex flex-col gap-1 cursor-pointer ${templateIdParam === t.id
                     ? "bg-violet-600/10 border-violet-500/30 text-foreground"
                     : "border-transparent text-muted-foreground hover:bg-card/40 hover:text-foreground"
-                }`}
+                  }`}
               >
                 <div className="flex justify-between items-start gap-2">
                   <span className="font-bold truncate">{t.name}</span>
@@ -933,7 +927,7 @@ function TemplatesContent() {
                 <label className="text-xs font-semibold text-muted-foreground" htmlFor="temp-content">
                   Modèle de prompt initial
                 </label>
-                
+
                 {/* Toolbar */}
                 <div className="flex flex-wrap gap-2 items-center p-1.5 rounded-lg border border-border/40 bg-background/50 mb-1.5">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-2">Assistant prompt :</span>
