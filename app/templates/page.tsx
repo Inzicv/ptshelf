@@ -161,12 +161,12 @@ function TemplatePlayground({
       previousPrompt = finalPrompt;
       finalPrompt = finalPrompt.replace(bracketCondRegex, (match, key, blockContent) => {
         const val = variableValues[key];
-        const isTruthy = val !== undefined && val !== "" && val !== "false" && val !== false;
+        const isTruthy = val !== undefined && val !== "" && val !== "false";
         return isTruthy ? blockContent : "";
       });
       finalPrompt = finalPrompt.replace(curlyCondRegex, (match, key, blockContent) => {
         const val = variableValues[key];
-        const isTruthy = val !== undefined && val !== "" && val !== "false" && val !== false;
+        const isTruthy = val !== undefined && val !== "" && val !== "false";
         return isTruthy ? blockContent : "";
       });
     }
@@ -407,7 +407,7 @@ function TemplatePlayground({
                           >
                             {key}
                           </label>
-                          <span className="text-[10px] text-muted-foreground/60 leading-none">Condition d'inclusion de bloc</span>
+                          <span className="text-[10px] text-muted-foreground/60 leading-none">{"Condition d'inclusion de bloc"}</span>
                         </div>
                         <button
                           type="button"
